@@ -1,0 +1,60 @@
+{
+  "name": "Ningua - Evaluation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ningua-evaluate",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0000-4000-8000-000000000001",
+      "name": "Evaluate Request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "ningua-evaluate"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Ningua evaluation stub — replaces the AI/speech pipeline locally.\n// In production this node calls the STT + AI providers and returns real feedback.\nconst body = $input.first().json.body || $input.first().json;\nconst jobId = body.jobId;\nconst kind = body.kind || 'speaking';\nconst targetText = body.targetText || '';\n\nconst feedback = {\n  encouragement: 'Clear and brave — well done.',\n  corrections: [\n    kind === 'speaking'\n      ? 'Lengthen the vowel in \"おはよう\".'\n      : 'Consider the particle は after the topic.',\n  ],\n  score: 0.78,\n  targetText,\n};\n\nreturn [{ json: {\n  callback: {\n    jobId,\n    status: 'completed',\n    transcript: kind === 'speaking' ? targetText : null,\n    feedback,\n  },\n} }];"
+      },
+      "id": "a1b2c3d4-0000-4000-8000-000000000002",
+      "name": "Build Feedback",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8080/api/v1/webhooks/n8n",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-N8N-Secret", "value": "change-me-long-random" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.callback) }}",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0000-4000-8000-000000000003",
+      "name": "Callback Spring",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 0]
+    }
+  ],
+  "connections": {
+    "Evaluate Request": {
+      "main": [[{ "node": "Build Feedback", "type": "main", "index": 0 }]]
+    },
+    "Build Feedback": {
+      "main": [[{ "node": "Callback Spring", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "active": true
+}

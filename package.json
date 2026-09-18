@@ -1,0 +1,18 @@
+{
+  "name": "ningua-app",
+  "private": true,
+  "version": "1.0.0",
+  "description": "NurseLingua, a multilingual communication aid for routine nursing care (React frontend + Spring Boot API + MySQL + n8n)",
+  "scripts": {
+    "install:all": "npm --prefix frontend install && npm --prefix api-mock install",
+    "dev:api": "npm --prefix api-mock start",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build:frontend": "npm --prefix frontend run build",
+    "verify:ui": "node tools/verify-ui.mjs",
+    "verify:api": "node tools/verify-api.mjs",
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down",
+    "backend": "mvn -f backend/pom.xml spring-boot:run",
+    "backend:win": ".tools/apache-maven-3.9.9/bin/mvn -f backend/pom.xml spring-boot:run"
+  }
+}

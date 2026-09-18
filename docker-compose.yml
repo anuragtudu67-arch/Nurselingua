@@ -1,0 +1,41 @@
+# Ningua local infrastructure: MySQL + n8n.
+# The Spring Boot backend runs on the host (mvn spring-boot:run / IntelliJ)
+# and talks to these over localhost. Frontend keeps using the Vite dev server.
+#
+#   docker compose up -d
+#
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: ningua-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpw
+      MYSQL_DATABASE: ningua
+      MYSQL_USER: ningua
+      MYSQL_PASSWORD: changeme
+    ports:
+      - "3306:3306"
+    volumes:
+      - ningua-mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-prootpw"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: ningua-n8n
+    ports:
+      - "5678:5678"
+    environment:
+      N8N_SECURE_COOKIE: "false"     # local http only
+      GENERIC_TIMEZONE: UTC
+    volumes:
+      - ningua-n8n:/home/node/.n8n
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # lets n8n call the host backend
+
+volumes:
+  ningua-mysql:
+  ningua-n8n:

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="NurseLingua">
+  <rect width="64" height="64" rx="14" fill="#0d9488"/>
+  <path d="M15 19h34a5 5 0 0 1 5 5v15a5 5 0 0 1-5 5H31l-10 8v-8h-6a5 5 0 0 1-5-5V24a5 5 0 0 1 5-5z" fill="#ffffff"/>
+  <path d="M19 31h5l3.2-6.4L32 38l3.4-7h9.6"
+        fill="none" stroke="#0f766e" stroke-width="3.2"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

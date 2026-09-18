@@ -1,0 +1,78 @@
+server:
+  port: 8080
+  error:
+    include-message: always
+
+spring:
+  application:
+    name: nurselingua-api
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/nurselingua?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${SPRING_DATASOURCE_USERNAME:nurselingua}
+    password: ${SPRING_DATASOURCE_PASSWORD:changeme}
+    hikari:
+      maximum-pool-size: 8
+  jpa:
+    # Views render after the persistence context closes; no queries run during rendering.
+    open-in-view: false
+    hibernate:
+      # Flyway owns the schema (V1__init.sql, V2__seed.sql); Hibernate never alters it.
+      ddl-auto: none
+    properties:
+      hibernate:
+        jdbc.time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+
+nurselingua:
+  # DEV shim: when true, endpoints accept `Authorization: Bearer dev.<email>` so the
+  # frontend demo (no Clerk keys) runs end-to-end. MUST be false outside local dev.
+  dev-auth: ${NURSELINGUA_DEV_AUTH:true}
+  clerk:
+    issuer: ${CLERK_JWT_ISSUER:}
+    # Optional PEM (static key mode). Empty = fetch JWKS from {issuer}/.well-known/jwks.json
+    public-key: ${CLERK_JWT_PUBLIC_KEY:}
+  cors:
+    allowed-origins: ${NURSELINGUA_CORS_ORIGINS:http://localhost:5173}
+  n8n:
+    base-url: ${N8N_WEBHOOK_URL:}
+    secret: ${N8N_WEBHOOK_SECRET:change-me-long-random}
+    enabled: ${N8N_ENABLED:false}   # false → jobs complete via internal simulated pipeline
+    callback-timeout-ms: 15000
+  storage:
+    # R2 presign settings. r2.enabled=false → local fallback: recordings accepted as
+    # inline references and TTS audio returned as synthesized references (demo mode).
+    r2:
+      enabled: ${R2_ENABLED:false}
+      account-id: ${R2_ACCOUNT_ID:}
+      bucket: ${R2_BUCKET:nurselingua-media}
+      access-key-id: ${R2_ACCESS_KEY_ID:}
+      secret-access-key: ${R2_SECRET_ACCESS_KEY:}
+      public-base-url: ${R2_PUBLIC_BASE_URL:}
+      presign-ttl-seconds: 300
+
+logging:
+  level:
+    com.nurselingua: INFO
+    org.springframework.security: WARN
+
+---
+# Dev/demo profile: boots with zero infrastructure (no MySQL, no n8n, no R2).
+#   mvn spring-boot:run -Dspring-boot.run.profiles=h2
+spring:
+  config:
+    activate:
+      on-profile: h2
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:nurselingua;MODE=MySQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE;DB_CLOSE_DELAY=-1}
+    username: sa
+    password: ""
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  jpa:
+    hibernate:
+      ddl-auto: none

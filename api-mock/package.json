@@ -1,0 +1,8 @@
+{
+  "name": "ningua-api-mock",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Runnable local stand-in for the Ningua Spring Boot API (same /api/v1 contract)",
+  "scripts": { "start": "node server.js" },
+  "dependencies": { "express": "^4.19.2", "cors": "^2.8.5" }
+}
