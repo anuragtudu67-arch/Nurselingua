@@ -5,6 +5,8 @@ node_modules/
 dist/
 build/
 backend/target/
+.freebuff/
+
 *.class
 
 # bundled Maven distribution (11 MB). Re-install or use the IntelliJ run

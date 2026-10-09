@@ -1,8 +1,13 @@
-// Landing: what the app does, how it works, one dominant action.
+// Landing: what the app does, how it works, the four support stages with a
+// real example, and one dominant action. Header carries the Ningua mark plus
+// How it works / Languages / Sign in, exactly one primary CTA and one quiet
+// secondary CTA in the hero.
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLocale } from '../i18n/locale';
 import { FooterDisclaimer } from '../components/AppShell';
 import { Icon, type IconName } from '../components/icons';
+import { STAGES, type Stage } from '../state/prefs';
 
 const STEPS: ReadonlyArray<{ icon: IconName; title: string; body: string }> = [
   {
@@ -66,16 +71,98 @@ function HeroDemo() {
   );
 }
 
+/** Interactive four-stage example: the same reviewed phrase at each stage. */
+function StageShowcase() {
+  const { t } = useLocale();
+  const [stage, setStage] = useState<Stage>('blend');
+  const [revealed, setRevealed] = useState(false);
+  const idx = STAGES.findIndex((s) => s.id === stage);
+
+  const base = 'Where is your pain?';
+  const target = '¿Dónde le duele?';
+
+  const familiar = (
+    <p className="ex-line">
+      {stage === 'support' && <span className="ex-who">English</span>}
+      <span className="ex-familiar">{base}</span>
+    </p>
+  );
+
+  return (
+    <>
+      <div className="stage-track" role="group" aria-label={t('stage.title')}>
+        {STAGES.map((s, i) => (
+          <button
+            key={s.id}
+            type="button"
+            className={`stage-step${i < idx ? ' done' : ''}${i === idx ? ' now' : ''}`}
+            aria-pressed={stage === s.id}
+            onClick={() => { setStage(s.id); setRevealed(false); }}
+          >
+            <span className="stage-dot" aria-hidden="true">{i + 1}</span>
+            <span className="stage-label">{t(s.nameKey)}</span>
+          </button>
+        ))}
+      </div>
+      <p className="stage-desc">{t(STAGES[idx].descKey)}</p>
+
+      <div className="stage-example">
+        <p className="ex-line" style={{ paddingBottom: '.4rem' }}>
+          {stage === 'support' && <span className="ex-who">Español</span>}
+          <span className="ex-target">{target}</span>
+        </p>
+
+        {(stage === 'support' || stage === 'blend') && familiar}
+
+        {(stage === 'focus' || stage === 'immersion') && (
+          revealed ? (
+            <>
+              {familiar}
+              <button
+                type="button"
+                className="reveal-btn"
+                aria-expanded="true"
+                onClick={() => setRevealed(false)}
+              >
+                <Icon name="close" size={13} /> Hide English
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="reveal-btn"
+              aria-expanded="false"
+              onClick={() => setRevealed(true)}
+            >
+              <Icon name="help" size={13} /> Show English
+            </button>
+          )
+        )}
+
+        <p className="small muted" style={{ marginTop: '.6rem' }}>
+          The reviewed translation never disappears; only your familiar-language line
+          folds away at the later stages, and it is always one tap back.
+        </p>
+      </div>
+    </>
+  );
+}
+
 export default function Landing() {
   const { t } = useLocale();
 
   return (
     <main id="main" className="page page-wide">
       <nav className="nav-public" aria-label="Public">
-        <span className="mark">{t('app.name')}</span>
+        <Link to="/" className="mark" style={{ textDecoration: 'none', color: 'var(--ink)' }}>
+          {t('app.name')}
+        </Link>
         <span style={{ flex: 1 }} />
-        <Link to="/sign-in">{t('landing.signin')}</Link>
-        <Link to="/sign-up" className="btn btn-primary">{t('landing.cta')}</Link>
+        <span className="pub-links">
+          <a href="#how">How it works</a>
+          <a href="#languages">Languages</a>
+          <Link to="/sign-in">{t('landing.signin')}</Link>
+        </span>
       </nav>
 
       <header className="landing-hero">
@@ -87,9 +174,9 @@ export default function Landing() {
             <Link to="/sign-up" className="btn btn-primary btn-block" style={{ maxWidth: 280 }}>
               {t('landing.cta')} <Icon name="arrowRight" size={17} />
             </Link>
-            <Link to="/interpreter" className="hero-alt">
-              <Icon name="phone" size={16} /> {t('disclaimer.interpreter')}
-            </Link>
+            <a href="#how" className="hero-alt">
+              See how it works
+            </a>
           </div>
           <p className="small muted hero-scope">
             <Icon name="shield" size={15} />
@@ -101,7 +188,7 @@ export default function Landing() {
         </div>
       </header>
 
-      <h2 className="section-h">How it works</h2>
+      <h2 className="section-h" id="how">How it works</h2>
       <div className="grid-4">
         {STEPS.map((s) => (
           <div className="card" key={s.title}>
@@ -112,7 +199,17 @@ export default function Landing() {
         ))}
       </div>
 
-      <h2 className="section-h">Patient languages in this build</h2>
+      <h2 className="section-h">How much support you want</h2>
+      <p className="muted small" style={{ maxWidth: 640, marginTop: '-.4rem' }}>
+        Ningua moves with you from familiar-language support toward confident use of the
+        patient’s language. Pick a stage to see the same reviewed phrase at that level.
+        A stage is a preference, not a score; you can switch back at any time.
+      </p>
+      <div className="card" style={{ marginTop: '1rem' }}>
+        <StageShowcase />
+      </div>
+
+      <h2 className="section-h" id="languages">Patient languages in this build</h2>
       <div className="chips-row">
         {PATIENT_LANGS.map((l) => <span className="chip" key={l}>{l}</span>)}
       </div>

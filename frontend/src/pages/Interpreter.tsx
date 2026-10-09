@@ -39,7 +39,7 @@ export default function Interpreter() {
         {t('disclaimer.interpreter')}
       </h1>
       <p className="muted" style={{ marginBottom: '1.5rem', maxWidth: 520 }}>
-        NurseLingua covers routine communication. Whenever the conversation carries
+        Ningua covers routine communication. Whenever the conversation carries
         clinical or legal weight, put a professional interpreter on the line instead.
       </p>
 

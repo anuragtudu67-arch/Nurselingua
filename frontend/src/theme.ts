@@ -1,7 +1,8 @@
-// Appearance preference: Light (default), Dark, or System.
+// Appearance preference: Light, Dark, or System.
 //
-// This is a client-side preference. The backend has no theme field in the
-// settings contract, so the choice is persisted in localStorage and applied to
+// System is the default unless a stored preference says otherwise. This is a
+// client-side preference: the backend has no theme field in the settings
+// contract, so the choice is persisted in localStorage and applied to
 // <html data-theme> before first paint by the inline script in index.html (so
 // there is no flash). When a backend preference is added later, only setPref /
 // getPref need to change.
@@ -15,13 +16,13 @@ const THEME_COLOR: Record<EffectiveTheme, string> = { light: '#f6f8f7', dark: '#
 const prefersDark = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-/** Stored preference, defaulting to Light. Unknown values fall back to Light. */
+/** Stored preference, defaulting to System. Unknown values fall back to System. */
 export function getPref(): ThemePref {
   try {
     const v = localStorage.getItem(KEY);
-    return v === 'dark' || v === 'system' ? v : 'light';
+    return v === 'dark' || v === 'light' ? v : 'system';
   } catch {
-    return 'light';
+    return 'system';
   }
 }
 

@@ -8,26 +8,31 @@ import { Skeleton } from '../components/ui';
 import { Icon } from '../components/icons';
 import type { Conversation } from '../api/client';
 import { LANGUAGES } from '../api/mockData';
+import { getStage, STAGES, usePrefs } from '../state/prefs';
 
 export default function NewConversation() {
   const { token } = useAuth();
   const store = useStore();
   const { t } = useLocale();
   const nav = useNavigate();
+  usePrefs();
 
   const [patientLang, setPatientLang] = useState('');
   const [creating, setCreating] = useState(false);
   const [convs, setConvs] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [nurseLang, setNurseLang] = useState('en');
 
   const langs = store.offline ? LANGUAGES : store.languages;
-  const patientLangs = langs.filter((l) => l.code !== 'en');
 
   useEffect(() => {
+    store.usersMe(token).then((m) => setNurseLang(m.settings.nurseLanguage)).catch(() => {});
     store.listConversations(token)
       .then((c) => { setConvs(c); setLoading(false); })
       .catch(() => setLoading(false));
   }, [store, token]);
+
+  const patientLangs = langs.filter((l) => l.code !== nurseLang);
 
   const start = async () => {
     if (!patientLang || creating) return;
@@ -64,6 +69,29 @@ export default function NewConversation() {
             </button>
           ))}
         </div>
+        {/* Full direction stated before the commit, with the stage it starts at */}
+        {patientLang && (
+          <div className="card" style={{ marginTop: '1rem', padding: '.9rem 1.1rem' }}>
+            <p className="small muted" style={{ margin: '0 0 .35rem' }}>
+              You are about to start a conversation that goes:
+            </p>
+            <span className="direction" style={{ fontSize: '1rem' }}>
+              <span className="dir-from">
+                {langs.find((l) => l.code === nurseLang)?.name ?? nurseLang}
+              </span>
+              <span className="dir-arrow" aria-hidden="true"><Icon name="arrowRight" size={16} /></span>
+              <span>{langs.find((l) => l.code === patientLang)?.name ?? patientLang}</span>
+              <span className="small muted" style={{ fontWeight: 500 }}>
+                ({langs.find((l) => l.code === patientLang)?.nativeName ?? patientLang})
+              </span>
+            </span>
+            <p className="small muted" style={{ margin: '.45rem 0 0' }}>
+              Support stage for this profile:{' '}
+              {t(`stage.${getStage(patientLang)}` as 'stage.support')}. You can change
+              it at any time on Home or in your profile.
+            </p>
+          </div>
+        )}
         <button
           className="btn btn-primary btn-block"
           style={{ marginTop: '1.25rem', maxWidth: 320 }}

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="description" content="NurseLingua is a communication aid for routine nursing care. Speak reviewed nursing phrases and short translations so you and your patient can read and hear each other in both languages." />
+    <meta name="description" content="Ningua is a communication aid for routine care conversations. Speak reviewed phrases and short translations so you and your patient can read and hear each other in both languages." />
     <meta name="theme-color" content="#f6f8f7" />
     <meta name="color-scheme" content="light dark" />
     <meta name="robots" content="index,follow" />
@@ -13,28 +13,28 @@
     <link rel="apple-touch-icon" href="/favicon.svg" />
 
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="NurseLingua" />
-    <meta property="og:title" content="NurseLingua | Speak your patient's language" />
-    <meta property="og:description" content="A communication aid for routine nursing care: reviewed phrases, two-sided conversation, and an interpreter one tap away." />
+    <meta property="og:site_name" content="Ningua" />
+    <meta property="og:title" content="Ningua | Speak your patient's language" />
+    <meta property="og:description" content="A communication aid for routine care: reviewed phrases, two-sided conversation, and an interpreter one tap away." />
     <meta property="og:image" content="/favicon.svg" />
     <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="NurseLingua | Speak your patient's language" />
-    <meta name="twitter:description" content="A communication aid for routine nursing care: reviewed phrases, two-sided conversation, and an interpreter one tap away." />
+    <meta name="twitter:title" content="Ningua | Speak your patient's language" />
+    <meta name="twitter:description" content="A communication aid for routine care: reviewed phrases, two-sided conversation, and an interpreter one tap away." />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
-    <title>NurseLingua | Speak your patient's language</title>
+    <title>Ningua | Speak your patient's language</title>
   </head>
   <body>
     <script>
       // Apply the saved appearance before first paint so there is no flash.
-      // Default is Light; Dark/System are opt-in (see src/theme.ts).
+      // Default is System; Light/Dark can be pinned (see src/theme.ts).
       (function () {
         try {
-          var pref = localStorage.getItem('nurselingua-theme') || 'light';
+          var pref = localStorage.getItem('nurselingua-theme') || 'system';
           var dark = pref === 'dark' ||
-            (pref === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            (pref !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
           var theme = dark ? 'dark' : 'light';
           document.documentElement.setAttribute('data-theme', theme);
           var meta = document.querySelector('meta[name="theme-color"]');

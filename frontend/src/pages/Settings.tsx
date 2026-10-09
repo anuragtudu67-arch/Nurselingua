@@ -1,6 +1,13 @@
-// Settings: name, languages, voice speed, retention, safety notice,
-// delete all data. All changes persist to backend via the store.
-import { useEffect, useState } from 'react';
+// Profile: grouped account, photo/avatar, language profiles (each with its own
+// direction, stage, and weekly goal), appearance, audio, privacy, and account
+// actions, with destructive controls separated at the bottom.
+//
+// Persistence split (documented in the UI itself):
+//   server-backed (frozen contract): nurse language, patient languages,
+//     speech rate, retention  -> saved with the Save button
+//   client-side adapter: display name, photo, avatar preset, support stages,
+//     weekly goals, active profile, appearance -> save instantly on this device
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { useStore } from '../state/StoreContext';
@@ -8,24 +15,36 @@ import { useLocale } from '../i18n/locale';
 import { FooterDisclaimer } from '../components/AppShell';
 import { Confirm, Skeleton } from '../components/ui';
 import { Icon } from '../components/icons';
-import Avatar from '../components/Avatar';
+import Avatar, { AVATAR_PRESETS } from '../components/Avatar';
+import StageControl from '../components/StageControl';
 import { getPref, setPref, type ThemePref } from '../theme';
-import type { Language, UsersMe } from '../api/client';
+import type { Favorite, UsersMe } from '../api/client';
 import { LANGUAGES } from '../api/mockData';
+import {
+  getActiveLang, setActiveLang, getDisplayName, setDisplayName,
+  getGoal, setGoal, getPhoto, setPhoto, getAvatarPreset, setAvatarPreset,
+  processPhotoFile, PHOTO_STORAGE_NOTE, getStage, STAGES, usePrefs,
+} from '../state/prefs';
+
+const GOAL_CHOICES = [0, 2, 3, 5, 7];
 
 export default function Settings() {
-  const { token, signOut } = useAuth();
+  const { token, email, signOut } = useAuth();
   const store = useStore();
   const { t } = useLocale();
   const nav = useNavigate();
+  usePrefs(); // photo / stage / goal / active-profile edits re-render immediately
 
   const [me, setMe] = useState<UsersMe | null>(null);
+  const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [showDelete, setShowDelete] = useState(false);
+  const [switchTo, setSwitchTo] = useState<string | null>(null);
 
-  // Editable fields
+  // server-backed fields
   const [name, setName] = useState('');
   const [nurseLang, setNurseLang] = useState('en');
   const [patientLangs, setPatientLangs] = useState<string[]>([]);
@@ -33,13 +52,20 @@ export default function Settings() {
   const [retention, setRetention] = useState<'24h' | '7days' | 'off'>('7days');
   const [themePref, setThemePref] = useState<ThemePref>(getPref());
 
+  // photo adapter states
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
   const langs = store.offline ? LANGUAGES : store.languages;
+  const activeLang = getActiveLang();
 
   useEffect(() => {
-    store.usersMe(token)
-      .then((m) => {
+    Promise.all([store.usersMe(token), store.listFavorites(token)])
+      .then(([m, f]) => {
         setMe(m);
-        setName(m.name ?? '');
+        setFavorites(f);
+        setName(getDisplayName() || m.name || '');
         setNurseLang(m.settings.nurseLanguage);
         setPatientLangs(m.settings.patientLanguages);
         setSpeechRate(m.settings.speechRate as 'slow' | 'normal');
@@ -51,6 +77,7 @@ export default function Settings() {
 
   const save = async () => {
     setSaving(true);
+    setSaveError(null);
     try {
       const updated = await store.saveSettings({
         nurseLanguage: nurseLang,
@@ -61,14 +88,19 @@ export default function Settings() {
       setMe(updated);
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
-    } catch { /* ignore */ }
+    } catch {
+      setSaveError('Could not save to your account. Check your connection and try again.');
+    }
     setSaving(false);
   };
 
   const deleteAll = async () => {
-    // In production this would call a DELETE /api/v1/users/me endpoint.
-    // For demo: sign out and clear localStorage.
     try { localStorage.clear(); } catch { /* ignore */ }
+    signOut();
+    nav('/');
+  };
+
+  const signOutNow = () => {
     signOut();
     nav('/');
   };
@@ -77,6 +109,33 @@ export default function Settings() {
     setPatientLangs((prev) =>
       prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]
     );
+  };
+
+  const pickPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setPhotoBusy(true);
+    setPhotoError(null);
+    try {
+      const dataUrl = await processPhotoFile(file);
+      setPhoto(dataUrl);          // honest: stored only after encoding succeeds
+    } catch (err) {
+      setPhotoError(err instanceof Error ? err.message : 'The photo could not be read.');
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
+  const choosePreset = (id: string) => {
+    if (getPhoto()) setPhoto(null); // a preset replaces the photo, visibly
+    setAvatarPreset(getAvatarPreset() === id ? null : id);
+  };
+
+  const confirmSwitch = () => {
+    if (!switchTo) return;
+    setActiveLang(switchTo);
+    setSwitchTo(null);
   };
 
   if (loading) {
@@ -88,36 +147,209 @@ export default function Settings() {
     );
   }
 
+  const photo = getPhoto();
+  const presetId = getAvatarPreset();
+  const langObj = (code: string) => langs.find((l) => l.code === code);
+  const nurseName = langObj(nurseLang)?.name ?? nurseLang;
+  const switchTarget = switchTo ? langObj(switchTo) : null;
+  const switchStage = switchTo
+    ? t(STAGES[Math.max(0, STAGES.findIndex((s) => s.id === getStage(switchTo)))].nameKey)
+    : '';
+
   return (
-    <div className="page" style={{ maxWidth: 640 }}>
+    <div className="page" style={{ maxWidth: 680 }}>
       <h1 className="title" style={{ marginBottom: '1.5rem' }}>{t('settings.title')}</h1>
 
-      {/* Identity */}
-      <section style={{ marginBottom: '1.5rem' }}>
-        <div className="identity">
-          <Avatar name={name || me?.name} email={me?.email} size={44} />
-          <div style={{ minWidth: 0 }}>
-            <div className="identity-name">{name || me?.name || 'Nurse'}</div>
-            {me?.email && <div className="identity-email">{me.email}</div>}
+      {/* ---------- account ---------- */}
+      <section className="set-group">
+        <h2>Account</h2>
+        <p className="set-sub">How you appear in the app.</p>
+
+        <div className="row" style={{ alignItems: 'flex-start', gap: '1rem', marginBottom: '1rem' }}>
+          <Avatar name={name || me?.name} email={me?.email} size={72} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="row" style={{ gap: '.6rem', flexWrap: 'wrap' }}>
+              <button className="btn btn-secondary" onClick={() => fileRef.current?.click()}
+                disabled={photoBusy}>
+                <Icon name="doc" size={16} /> {photo ? 'Change photo' : 'Upload photo'}
+              </button>
+              {photo && (
+                <button className="btn btn-quiet" onClick={() => { setPhoto(null); setPhotoError(null); }}>
+                  Remove photo
+                </button>
+              )}
+            </div>
+            <input
+              ref={fileRef} type="file" accept="image/*" hidden
+              onChange={pickPhoto} aria-hidden="true" tabIndex={-1}
+            />
+            {photoBusy && (
+              <div className="upload-progress" role="status" aria-label="Reading photo">
+                <span />
+              </div>
+            )}
+            {photoError && (
+              <p className="small" role="alert" style={{ color: 'var(--error)', marginTop: '.5rem' }}>
+                {photoError}
+              </p>
+            )}
+            <p className="tiny muted" style={{ marginTop: '.5rem', marginBottom: 0 }}>
+              {PHOTO_STORAGE_NOTE}
+            </p>
+          </div>
+        </div>
+
+        <p className="label" id="avatar-picker-label">Or pick an avatar</p>
+        <div className="avatar-grid" role="group" aria-labelledby="avatar-picker-label">
+          {AVATAR_PRESETS.map((p) => (
+            <button
+              key={p.id}
+              className="avatar-opt"
+              aria-pressed={presetId === p.id && !photo}
+              aria-label={`${p.label} avatar`}
+              onClick={() => choosePreset(p.id)}
+            >
+              <span className="avatar-preset" style={{ background: p.bg }} aria-hidden="true">
+                <svg width="60%" height="60%" viewBox="0 0 24 24" focusable="false">{p.glyph}</svg>
+              </span>
+            </button>
+          ))}
+        </div>
+        <p className="tiny muted" style={{ marginTop: '.4rem' }}>
+          Avatars are drawn shapes, never emoji. A photo takes priority over an avatar.
+        </p>
+
+        <div style={{ marginTop: '1rem' }}>
+          <label className="label" htmlFor="settings-name">Display name</label>
+          <input
+            id="settings-name"
+            className="input"
+            value={name}
+            onChange={(e) => { setName(e.target.value); setDisplayName(e.target.value); }}
+            placeholder="Nurse name"
+            autoComplete="nickname"
+          />
+          <p className="setting-help">
+            Saved automatically on this device. Your sign-in email stays {email ?? 'as signed in'}.
+          </p>
+        </div>
+      </section>
+
+      {/* ---------- languages (account-wide, server-backed) ---------- */}
+      <section className="set-group">
+        <h2>Languages</h2>
+        <p className="set-sub">Account-wide. Saved with the Save button below.</p>
+
+        <div style={{ marginBottom: '1.1rem' }}>
+          <h3 style={{ fontSize: '.95rem', marginBottom: '.5rem' }}>{t('onboarding.nurseLanguage')}</h3>
+          <div className="seg" role="radiogroup" aria-label={t('onboarding.nurseLanguage')}>
+            {langs.map((l) => (
+              <button key={l.code} role="radio" aria-checked={nurseLang === l.code}
+                onClick={() => setNurseLang(l.code)}>
+                {l.name}
+            </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h3 style={{ fontSize: '.95rem', marginBottom: '.5rem' }}>{t('onboarding.patientLanguages')}</h3>
+          <div className="tile-grid" role="group" aria-label={t('onboarding.patientLanguages')}>
+            {langs.filter((l) => l.code !== nurseLang).map((l) => {
+              const active = patientLangs.includes(l.code);
+              return (
+                <button key={l.code} className="tile" aria-pressed={active}
+                  onClick={() => togglePatientLang(l.code)}>
+                  <strong>{l.nativeName}</strong><br />
+                  <span className="small muted">{l.name}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* Name */}
-      <section style={{ marginBottom: '1.5rem' }}>
-        <label className="label" htmlFor="settings-name">Your name</label>
-        <input
-          id="settings-name"
-          className="input"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Nurse name"
-        />
+      {/* ---------- language profiles ---------- */}
+      <section className="set-group">
+        <h2>Language profiles</h2>
+        <p className="set-sub">
+          Each profile keeps its own direction, support stage, and weekly goal.
+          Switching states the full direction and asks you to confirm.
+        </p>
+
+        {patientLangs.length === 0 && (
+          <p className="small muted">
+            Add a patient language above and it appears here as its own profile.
+          </p>
+        )}
+
+        {patientLangs.map((code) => {
+          const l = langObj(code);
+          const isActive = activeLang === code;
+          const savedCount = favorites.filter((f) => f.languageCode === code)
+            .reduce((acc, f) => (acc.some((x) => x === f.phraseId) ? acc : [...acc, f.phraseId]), [] as string[])
+            .length;
+          const goal = getGoal(code);
+          return (
+            <div key={code} className={`profile-card${isActive ? ' active-profile' : ''}`}>
+              <div className="between" style={{ marginBottom: '.5rem', flexWrap: 'wrap', gap: '.5rem' }}>
+                <span className="direction">
+                  <span className="dir-from">{nurseName}</span>
+                  <span className="dir-arrow" aria-hidden="true"><Icon name="arrowRight" size={15} /></span>
+                  <span>{l?.name ?? code}</span>
+                  <span className="small muted" style={{ fontWeight: 500 }}>({l?.nativeName ?? code})</span>
+                </span>
+                {isActive ? (
+                  <span className="stage-chip"><Icon name="check" size={13} /> Active profile</span>
+                ) : (
+                  <button className="btn btn-secondary" style={{ minHeight: 36, fontSize: '.82rem' }}
+                    onClick={() => setSwitchTo(code)}>
+                    Make active
+                  </button>
+                )}
+              </div>
+
+              <StageControl lang={code} label={`Support stage for ${l?.name ?? code}`} />
+
+              <div className="set-row" style={{ borderTop: '1px solid var(--border-l)', marginTop: '.6rem' }}>
+                <div className="set-row-main">
+                  <div className="set-row-label">Weekly goal</div>
+                  <div className="set-row-desc">
+                    How many conversations you aim for each week in this profile. Shows on Home.
+                  </div>
+                </div>
+                <select
+                  className="select" style={{ width: 'auto' }}
+                  aria-label={`Weekly goal for ${l?.name ?? code}`}
+                  value={goal}
+                  onChange={(e) => setGoal(code, Number(e.target.value))}
+                >
+                  {GOAL_CHOICES.map((g) => (
+                    <option key={g} value={g}>{g === 0 ? 'No goal' : `${g} per week`}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="set-row">
+                <div className="set-row-main">
+                  <div className="set-row-label">Saved phrases</div>
+                  <div className="set-row-desc">Starred in Learn and available in Review.</div>
+                </div>
+                <strong>{savedCount}</strong>
+              </div>
+            </div>
+          );
+        })}
+
+        <div style={{ marginTop: '1rem' }}>
+          <StageControl lang={null} label="Default stage for profiles without their own" />
+        </div>
       </section>
 
-      {/* Appearance */}
-      <section style={{ marginBottom: '1.5rem' }}>
-        <h2 className="onb-q">Appearance</h2>
+      {/* ---------- appearance ---------- */}
+      <section className="set-group">
+        <h2>Appearance</h2>
+        <p className="set-sub">Applies instantly, everywhere in the app.</p>
         <div className="seg" role="radiogroup" aria-label="Appearance">
           {(['light', 'dark', 'system'] as const).map((p) => (
             <button
@@ -131,131 +363,114 @@ export default function Settings() {
           ))}
         </div>
         <p className="setting-help">
-          Light is the default. <strong>System</strong> follows your device and updates
-          automatically. This choice is saved on this device.
+          <strong>System</strong> is the default: it follows your device and updates
+          automatically. Pinning Light or Dark overrides it. This choice is saved on
+          this device; the account has no theme field.
         </p>
       </section>
 
-      {/* Nurse language */}
-      <section style={{ marginBottom: '1.5rem' }}>
-        <h2 className="onb-q">{t('onboarding.nurseLanguage')}</h2>
-        <div className="seg" role="radiogroup" aria-label={t('onboarding.nurseLanguage')}>
-          {langs.map((l) => (
-            <button
-              key={l.code}
-              role="radio"
-              aria-checked={nurseLang === l.code}
-              onClick={() => setNurseLang(l.code)}
-            >
-              {l.name}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* Patient languages */}
-      <section style={{ marginBottom: '1.5rem' }}>
-        <h2 className="onb-q">{t('onboarding.patientLanguages')}</h2>
-        <div className="tile-grid" role="group" aria-label={t('onboarding.patientLanguages')}>
-          {langs.filter((l) => l.code !== nurseLang).map((l) => {
-            const active = patientLangs.includes(l.code);
-            return (
-              <button
-                key={l.code}
-                className="tile"
-                aria-pressed={active}
-                onClick={() => togglePatientLang(l.code)}
-              >
-                <strong>{l.nativeName}</strong><br />
-                <span className="small muted">{l.name}</span>
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Speech rate */}
-      <section style={{ marginBottom: '1.5rem' }}>
-        <h2 className="onb-q">{t('onboarding.speechRate')}</h2>
+      {/* ---------- audio ---------- */}
+      <section className="set-group">
+        <h2>Audio</h2>
+        <p className="set-sub">How patient-facing phrases are spoken aloud.</p>
         <div className="seg" role="radiogroup" aria-label={t('onboarding.speechRate')}>
           {(['slow', 'normal'] as const).map((r) => (
-            <button
-              key={r}
-              role="radio"
-              aria-checked={speechRate === r}
-              onClick={() => setSpeechRate(r)}
-            >
+            <button key={r} role="radio" aria-checked={speechRate === r}
+              onClick={() => setSpeechRate(r)}>
               {r === 'slow' ? t('onboarding.speechRate.slow') : t('onboarding.speechRate.normal')}
             </button>
           ))}
         </div>
+        <p className="setting-help">
+          Slow is easier to follow at the bedside; Normal is quicker for familiar phrases.
+        </p>
       </section>
 
-      {/* Retention */}
-      <section style={{ marginBottom: '1.5rem' }}>
-        <h2 className="onb-q">{t('onboarding.retention')}</h2>
+      {/* ---------- privacy ---------- */}
+      <section className="set-group">
+        <h2>Privacy</h2>
+        <p className="set-sub">You choose how long conversations stay in history.</p>
         <div className="seg" role="radiogroup" aria-label={t('onboarding.retention')}>
           {(['24h', '7days', 'off'] as const).map((r) => (
-            <button
-              key={r}
-              role="radio"
-              aria-checked={retention === r}
-              onClick={() => setRetention(r)}
-            >
+            <button key={r} role="radio" aria-checked={retention === r}
+              onClick={() => setRetention(r)}>
               {r === '24h' ? t('onboarding.retention.24h')
                 : r === '7days' ? t('onboarding.retention.7days')
                 : t('onboarding.retention.off')}
             </button>
           ))}
         </div>
+        <p className="setting-help">{t('history.autoExpiry')}</p>
       </section>
 
-      {/* Safety notice */}
-      <section className="card" style={{ marginBottom: '1.5rem', padding: '1rem 1.25rem' }}>
-        <h3 style={{ marginBottom: '.5rem', display: 'flex', alignItems: 'center', gap: '.45rem' }}>
-          <Icon name="shield" size={17} /> Safety Notice
-        </h3>
-        <p className="small muted">{t('disclaimer.body')}</p>
-        <p className="tiny muted" style={{ marginTop: '.3rem' }}>
-          NurseLingua is a communication aid for routine interactions, not a medical device,
-          not a diagnosis tool. For informed consent, serious news, or any critical conversation,
-          use a professional interpreter.
+      {/* ---------- safety notice ---------- */}
+      <section className="set-group">
+        <h2>Safety notice</h2>
+        <p className="small muted" style={{ margin: 0 }}>{t('disclaimer.body')}</p>
+        <p className="tiny muted" style={{ marginTop: '.35rem', marginBottom: 0 }}>
+          Ningua is a communication aid for routine interactions, not a medical device,
+          not a diagnosis tool. For informed consent, serious news, or any critical
+          conversation, use a professional interpreter.
         </p>
       </section>
 
-      {/* Save */}
-      <div className="row" style={{ marginBottom: '2rem', gap: '.75rem' }}>
-        <button
-          className="btn btn-primary"
-          onClick={save}
-          disabled={saving}
-        >
-          {saving ? t('common.loading') : saved ? <><Icon name="check" size={16} /> Saved</> : 'Save settings'}
+      {/* ---------- save (server-backed fields) ---------- */}
+      <div className="row" style={{ gap: '.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+        <button className="btn btn-primary" onClick={save} disabled={saving}>
+          {saving ? t('common.loading') : saved ? <><Icon name="check" size={16} /> Saved</> : 'Save languages and privacy'}
         </button>
         {saved && <span className="small" style={{ color: 'var(--success)' }}>{t('settings.saved')}</span>}
+        {saveError && (
+          <span className="small" role="alert" style={{ color: 'var(--error)' }}>{saveError}</span>
+        )}
       </div>
+      <p className="tiny muted" style={{ marginTop: '-1rem', marginBottom: '1.5rem' }}>
+        Support stages, goals, your photo, avatar, and display name save instantly on
+        this device, so they have no Save button.
+      </p>
 
-      {/* Delete all data */}
-      <section style={{ borderTop: '1px solid var(--border)', paddingTop: '1.5rem', marginBottom: '1.5rem' }}>
-        <h3 style={{ color: 'var(--error)', marginBottom: '.5rem' }}>Danger Zone</h3>
+      {/* ---------- account actions ---------- */}
+      <section className="set-group">
+        <h2>Account actions</h2>
+        <div className="set-row">
+          <div className="set-row-main">
+            <div className="set-row-label">Sign out</div>
+            <div className="set-row-desc">Ends this session on this device. Your data stays.</div>
+          </div>
+          <button className="btn btn-secondary" onClick={signOutNow}>Sign out</button>
+        </div>
+      </section>
+
+      {/* ---------- danger zone (separated) ---------- */}
+      <section style={{ borderTop: '2px solid var(--error)', paddingTop: '1.25rem', marginBottom: '1.5rem' }}>
+        <h3 style={{ color: 'var(--error)', marginBottom: '.5rem' }}>Delete all data</h3>
         <p className="small muted" style={{ marginBottom: '.75rem' }}>
-          Delete all your data including conversations, favorites, and settings.
-          This cannot be undone.
+          Permanently removes your conversations, favorites, settings, usage data, and
+          the preferences stored on this device. This cannot be undone.
         </p>
-        <button
-          className="btn btn-danger"
-          onClick={() => setShowDelete(true)}
-        >
-          Delete all data
+        <button className="btn btn-danger" onClick={() => setShowDelete(true)}>
+          Delete everything
         </button>
       </section>
 
       <FooterDisclaimer />
 
+      {switchTo && switchTarget && (
+        <Confirm
+          title={`Switch to ${nurseName} to ${switchTarget.name}?`}
+          body={`Your active profile becomes ${nurseName} to ${switchTarget.name} (${switchTarget.nativeName}), `
+            + `with the ${switchStage} stage and its own weekly goal. Account-wide settings do not change, `
+            + 'and you can switch back at any time.'}
+          confirmLabel="Switch profile"
+          onConfirm={confirmSwitch}
+          onClose={() => setSwitchTo(null)}
+        />
+      )}
+
       {showDelete && (
         <Confirm
           title="Delete all data?"
-          body="This will permanently remove all your conversations, favorites, settings, and usage data. This cannot be undone."
+          body="This will permanently remove all your conversations, favorites, settings, usage data, and device preferences. This cannot be undone."
           confirmLabel="Delete everything"
           onConfirm={deleteAll}
           onClose={() => setShowDelete(false)}

@@ -11,6 +11,7 @@ import { MicRecorder, SpeakButton, Skeleton, Empty, ErrorBox } from '../componen
 import { Icon } from '../components/icons';
 import type { ConversationDetail, Phrase, Turn, Language } from '../api/client';
 import { LANGUAGES } from '../api/mockData';
+import { getStage, STAGES, usePrefs, type Stage } from '../state/prefs';
 
 export default function Conversation() {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +19,7 @@ export default function Conversation() {
   const store = useStore();
   const { t } = useLocale();
   const nav = useNavigate();
+  usePrefs(); // stage changes reflect immediately inside the session
 
   const [detail, setDetail] = useState<ConversationDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,6 +45,9 @@ export default function Conversation() {
   // scroll ref
   const listEnd = useRef<HTMLDivElement>(null);
 
+  // stage-driven familiar-language display (immersion folds all turns at once)
+  const [showAllFamiliar, setShowAllFamiliar] = useState(false);
+
   const langs = store.offline ? LANGUAGES : store.languages;
 
   const conv = detail?.conversation;
@@ -50,6 +55,16 @@ export default function Conversation() {
   const patientLang = conv?.patientLanguage ?? 'es';
   const nurseLang = conv?.nurseLanguage ?? 'en';
   const patientLangObj = langs.find((l) => l.code === patientLang);
+  const stage: Stage = conv ? getStage(conv.patientLanguage) : 'blend';
+  const stageMeta = STAGES.find((s) => s.id === stage)!;
+  const foldsFamiliar = stage === 'focus' || stage === 'immersion';
+
+  // checkpoint: what should happen next in this session
+  const nextAction = turns.length === 0
+    ? 'Start with a phrasebook phrase, your voice, or typing below.'
+    : turns[turns.length - 1].speaker === 'NURSE'
+      ? 'Now capture the patient’s reply: record their voice or type it below.'
+      : 'Your turn: reply with a phrase, your voice, or typing.';
 
   // Load conversation
   const load = useCallback(() => {
@@ -209,12 +224,38 @@ export default function Conversation() {
               {patientLangObj?.nativeName ?? patientLang}
             </span>
           </div>
-          <div className="conv-meta">{turns.length} turns</div>
+          <div className="conv-meta">
+            {turns.length} turns · {t('stage.title')}:{' '}
+            <span className="stage-chip" style={{ marginLeft: '.3rem' }}>
+              <Icon name="swap" size={12} /> {t(stageMeta.nameKey)}
+            </span>
+          </div>
         </div>
         <button className="btn btn-secondary" onClick={() => nav('/interpreter')} aria-label="Request interpreter">
           <Icon name="phone" size={16} /> {t('disclaimer.interpreter')}
         </button>
       </div>
+
+      {/* checkpoint: the next real action in this session */}
+      <div className="next-hint" role="status">
+        <Icon name="arrowRight" size={14} />
+        <span>{nextAction}</span>
+      </div>
+
+      {/* Immersion: one tap unfolds (or folds) the familiar line on every turn */}
+      {stage === 'immersion' && (
+        <div className="row" style={{ padding: '.5rem 1.5rem 0' }}>
+          <button
+            className="btn btn-secondary"
+            aria-pressed={showAllFamiliar}
+            onClick={() => setShowAllFamiliar((v) => !v)}
+            style={{ minHeight: 40, fontSize: '.85rem' }}
+          >
+            <Icon name={showAllFamiliar ? 'close' : 'help'} size={15} />
+            {showAllFamiliar ? 'Hide English' : 'Show English for all turns'}
+          </button>
+        </div>
+      )}
 
       {/* Turn list */}
       <div className="msg-list" style={{ flex: 1, overflow: 'auto', padding: '1rem 1.5rem' }}>
@@ -225,7 +266,14 @@ export default function Conversation() {
           />
         ) : (
           turns.map((turn) => (
-            <TurnBubble key={turn.id} turn={turn} langs={langs} />
+            <TurnBubble
+              key={turn.id}
+              turn={turn}
+              langs={langs}
+              familiarLang={conv.nurseLanguage}
+              stage={stage}
+              showAll={showAllFamiliar}
+            />
           ))
         )}
         <div ref={listEnd} />
@@ -367,9 +415,36 @@ export default function Conversation() {
 }
 
 // ---------- Turn bubble ----------
-function TurnBubble({ turn, langs }: { turn: Turn; langs: Language[] }) {
+// The stage decides whether the familiar-language line of this turn is folded.
+// The target-language line is never folded: removing comprehension support
+// from the conversation itself would be unsafe, so only the duplicate
+// familiar line moves behind a reveal.
+function TurnBubble({ turn, langs, familiarLang, stage, showAll }: {
+  turn: Turn; langs: Language[]; familiarLang: string; stage: Stage; showAll: boolean;
+}) {
   const isNurse = turn.speaker === 'NURSE';
-  const targetLangObj = langs.find((l) => l.code === turn.targetLang);
+  const [open, setOpen] = useState(false);
+  const folds = (stage === 'focus' && !showAll) || (stage === 'immersion' && !showAll);
+  const labels = stage === 'support';
+
+  const sourceIsFamiliar = turn.sourceLang === familiarLang;
+  const sourceLangName = langs.find((l) => l.code === turn.sourceLang)?.name ?? turn.sourceLang;
+  const targetLangName = langs.find((l) => l.code === turn.targetLang)?.name ?? turn.targetLang;
+
+  const familiarVisible = !folds || open || showAll;
+  const showSource = sourceIsFamiliar ? familiarVisible : true;
+  const showTarget = sourceIsFamiliar ? true : familiarVisible;
+
+  const familiarToggle = folds && (
+    <button
+      className="reveal-btn"
+      aria-expanded={open}
+      onClick={() => setOpen((v) => !v)}
+    >
+      <Icon name={open ? 'close' : 'help'} size={13} />
+      {open ? 'Hide English' : 'Show English'}
+    </button>
+  );
 
   return (
     <div className={`turn ${isNurse ? 'nurse' : 'patient'}`}>
@@ -377,13 +452,22 @@ function TurnBubble({ turn, langs }: { turn: Turn; langs: Language[] }) {
         <div className="turn-speaker">
           {isNurse ? 'Nurse' : 'Patient'}
         </div>
-        <div className="turn-source">{turn.sourceText}</div>
-        <div className="turn-target">
-          <span style={{ fontWeight: 600 }}>{turn.targetText}</span>
-          {turn.targetRomanization && (
-            <div className="turn-romanization">{turn.targetRomanization}</div>
-          )}
-        </div>
+        {showSource && (
+          <div className="turn-source">
+            {labels && <span className="line-lang">{sourceLangName}</span>}
+            {turn.sourceText}
+          </div>
+        )}
+        {showTarget && (
+          <div className="turn-target">
+            {labels && <span className="line-lang">{targetLangName}</span>}
+            <span style={{ fontWeight: 600 }}>{turn.targetText}</span>
+            {turn.targetRomanization && (
+              <div className="turn-romanization">{turn.targetRomanization}</div>
+            )}
+          </div>
+        )}
+        {familiarToggle}
         <div className="turn-meta">
           {turn.libraryPhraseId ? (
             <span className="badge badge-library">Library</span>

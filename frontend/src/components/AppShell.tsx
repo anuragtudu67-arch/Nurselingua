@@ -1,14 +1,19 @@
 // Authenticated shell: desktop left rail / mobile bottom nav.
+// Five quiet areas: Home, Learn, Review, Progress, Profile.
 // A persistent "Request an interpreter" shortcut is one tap away everywhere.
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useLocale } from '../i18n/locale';
 import { useAuth } from '../auth/AuthContext';
 import Avatar from './Avatar';
 import { Icon, type IconName } from './icons';
+import { getDisplayName, usePrefs } from '../state/prefs';
 
-const NAV: ReadonlyArray<{ to: string; labelKey: 'nav.home' | 'nav.phrasebook' | 'nav.history' | 'nav.settings'; icon: IconName }> = [
+type NavKey = 'nav.home' | 'nav.phrasebook' | 'nav.review' | 'nav.history' | 'nav.settings';
+
+const NAV: ReadonlyArray<{ to: string; labelKey: NavKey; icon: IconName }> = [
   { to: '/home', labelKey: 'nav.home', icon: 'home' },
   { to: '/phrasebook', labelKey: 'nav.phrasebook', icon: 'phrasebook' },
+  { to: '/review', labelKey: 'nav.review', icon: 'star' },
   { to: '/history', labelKey: 'nav.history', icon: 'history' },
   { to: '/settings', labelKey: 'nav.settings', icon: 'settings' },
 ];
@@ -18,9 +23,13 @@ export default function AppShell({ children, focused }: { children: React.ReactN
   const nav = useNavigate();
   const { t } = useLocale();
   const { name, email } = useAuth();
+  usePrefs();
+  // Display preference (this device) wins over the auth-shim derived name.
+  const displayName = getDisplayName() || name || '';
 
   const active = NAV.find((n) => loc.pathname.startsWith(n.to))?.labelKey
     ?? (loc.pathname.startsWith('/conversation') ? 'nav.conversation' : 'nav.home');
+  const activeKey: NavKey | 'nav.conversation' = active;
 
   if (focused) {
     return (
@@ -43,10 +52,10 @@ export default function AppShell({ children, focused }: { children: React.ReactN
         ))}
         <div className="spacer" />
         <Link to="/settings" className="identity" style={{ textDecoration: 'none', marginBottom: '.6rem' }}
-          aria-label={`Account: ${name || email || 'Nurse'}`}>
-          <Avatar name={name} email={email} size={34} />
+          aria-label={`Profile: ${displayName || email || t('common.nurse')}`}>
+          <Avatar name={displayName} email={email} size={34} />
           <div style={{ minWidth: 0 }}>
-            <div className="identity-name">{name || 'Nurse'}</div>
+            <div className="identity-name">{displayName || t('common.nurse')}</div>
             {email && <div className="identity-email">{email}</div>}
           </div>
         </Link>
@@ -57,7 +66,7 @@ export default function AppShell({ children, focused }: { children: React.ReactN
 
       <div className="content">
         <div className="topbar">
-          <strong style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.2rem' }}>{t(active)}</strong>
+          <strong style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.2rem' }}>{t(activeKey)}</strong>
           <span style={{ flex: 1 }} />
           <button className="btn btn-secondary" onClick={() => nav('/interpreter')}
             aria-label={t('disclaimer.interpreter')}>

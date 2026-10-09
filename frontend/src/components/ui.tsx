@@ -1,4 +1,4 @@
-// Shared NurseLingua components: sheets, toasts, states, native-voice audio,
+// Shared Ningua components: sheets, toasts, states, native-voice audio,
 // recorder with explicit states, first-run disclaimer.
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocale } from '../i18n/locale';
@@ -142,7 +142,7 @@ export function FirstRunDisclaimer() {
         <h2 style={{ marginTop: 0 }}>Before you begin</h2>
         <p>{t('disclaimer.body')}</p>
         <p className="small muted">
-          NurseLingua is a communication aid for routine interactions, not a medical
+          Ningua is a communication aid for routine interactions, not a medical
           device and not a diagnosis tool. For informed consent, serious news, or any
           critical conversation, use a professional interpreter.
         </p>

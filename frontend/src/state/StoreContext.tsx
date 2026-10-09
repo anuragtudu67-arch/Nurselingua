@@ -9,7 +9,7 @@ import { useAuth } from '../auth/AuthContext';
 export type AddTurnBody = api.AddTurnBody;
 import type {
   Category, Conversation, ConversationDetail, Favorite, Language, Phrase, Recent,
-  Settings, Turn, UsersMe, WorkflowStatus,
+  Settings, Turn, Usage, UsersMe, WorkflowStatus,
 } from '../api/client';
 import { CATEGORIES, LANGUAGES, PHRASES } from '../api/mockData';
 
@@ -69,6 +69,8 @@ export interface StoreValue {
   addFavorite: (phraseId: string, lang: string, token: string | null) => Promise<void>;
   removeFavorite: (phraseId: string, lang: string, token: string | null) => Promise<void>;
   listRecents: (token: string | null) => Promise<Recent[]>;
+  /** null in offline mode: pipeline stats only exist on the live backend. */
+  usage: (token: string | null) => Promise<Usage | null>;
 }
 
 const Ctx = createContext<StoreValue>(null as unknown as StoreValue);
@@ -276,6 +278,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       commit();
     },
     listRecents: async () => offline.recents.slice(0, 12),
+    usage: async () => null, // offline sim has no pipeline telemetry; never fake it
   };
 
   // Wire recents into the sim addTurn path (one-tap reuse on Home).
@@ -318,6 +321,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     addFavorite: async (p, l, token) => { await api.addFavorite(p, l, token); },
     removeFavorite: async (p, l, token) => { await api.removeFavorite(p, l, token); },
     listRecents: (token) => api.listRecents(token),
+    usage: (token) => api.getUsage(token),
   };
 
   // Catalog for live mode is fetched once by App via loadCatalog.

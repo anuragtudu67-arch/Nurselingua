@@ -84,7 +84,7 @@ const AUDIT = `(() => {
 })()`;
 
 const ROUTES = ['/', '/terms', '/privacy', '/sign-in', '/sign-up', '/interpreter',
-  '/home', '/phrasebook', '/history', '/settings', '/conversation', `/conversation/${conv.id}`];
+  '/home', '/phrasebook', '/review', '/history', '/settings', '/conversation', `/conversation/${conv.id}`];
 
 // ---------- drive Chrome over CDP ----------
 const profile = mkdtempSync(join(tmpdir(), 'nl-verify-'));

@@ -11,6 +11,7 @@ import Onboarding from './pages/Onboarding';
 import Home from './pages/Home';
 import Conversation from './pages/Conversation';
 import Phrasebook from './pages/Phrasebook';
+import Review from './pages/Review';
 import History from './pages/History';
 import Settings from './pages/Settings';
 import Interpreter from './pages/Interpreter';
@@ -42,7 +43,7 @@ function Guard({ children, focused }: { children: JSX.Element; focused?: boolean
       <AppShell>
         <div className="page">
           <ErrorBox
-            title="We couldn't reach NurseLingua"
+            title="We couldn't reach Ningua"
             body="You're signed in, but the connection failed just now. Nothing was lost. Check your connection and retry."
             onRetry={() => setAttempt((a) => a + 1)}
           />
@@ -85,6 +86,7 @@ export default function App() {
         <Route path="/conversation" element={<Guard><NewConversation /></Guard>} />
         <Route path="/conversation/:id" element={<Guard focused><Conversation /></Guard>} />
         <Route path="/phrasebook" element={<Guard><Phrasebook /></Guard>} />
+        <Route path="/review" element={<Guard><Review /></Guard>} />
         <Route path="/history" element={<Guard><History /></Guard>} />
         <Route path="/history/:id" element={<Guard focused><Conversation /></Guard>} />
         <Route path="/settings" element={<Guard><Settings /></Guard>} />

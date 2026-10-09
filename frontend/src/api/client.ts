@@ -1,4 +1,4 @@
-// NurseLingua API client, mirroring the Spring Boot /api/v1 contract (docs/API.md).
+// Ningua API client, mirroring the Spring Boot /api/v1 contract (docs/API.md).
 // Offline demo mode: if the backend is unreachable, in-browser mockData serves the
 // exact same shapes (documented swap; see README "Demo-first data layer").
 
@@ -101,6 +101,17 @@ export interface WorkflowStatus {
 export interface Favorite { phraseId: string; languageCode: string; createdAt: string | null }
 export interface Recent { phraseId: string; languageCode: string; usedAt: string | null }
 
+// GET /usage (docs/API.md): totals and pipeline health computed by the backend.
+export interface PipelineStat {
+  total: number; failures: number; failureRate: number; avgLatencyMs: number | null;
+}
+export interface Usage {
+  sessions: number; turns: number;
+  languagePairs: { pair: string; count: number }[];
+  topPhrases: { phraseId: string; baseText: string; count: number }[];
+  stt: PipelineStat; mt: PipelineStat; tts: PipelineStat;
+}
+
 // ---- Endpoints ----
 
 export const usersMe = (token?: string | null) => get<UsersMe>('/users/me', token);
@@ -153,3 +164,4 @@ export const addFavorite = (phraseId: string, languageCode: string, token?: stri
 export const removeFavorite = (phraseId: string, languageCode: string, token?: string | null) =>
   del<{ ok: boolean }>(`/favorites/${phraseId}/${languageCode}`, token);
 export const listRecents = (token?: string | null) => get<Recent[]>('/recents', token);
+export const getUsage = (token?: string | null) => get<Usage>('/usage', token);

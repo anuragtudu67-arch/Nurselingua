@@ -46,7 +46,7 @@ function LegalShell({ title, updated, intro, sections }: {
           <Link to="/terms">Terms of Use</Link> and <Link to="/privacy">Privacy Policy</Link>.
         </p>
         <Link to="/" className="legal-back">
-          <Icon name="arrowRight" size={16} className="legal-back-ico" /> Back to NurseLingua
+          <Icon name="arrowRight" size={16} className="legal-back-ico" /> Back to Ningua
         </Link>
       </article>
     </main>
@@ -58,13 +58,13 @@ export function TermsPage() {
     <LegalShell
       title="Terms of Use"
       updated={EFFECTIVE}
-      intro={`These terms are an agreement between you and ${OPERATOR} for the use of NurseLingua at ${DOMAIN}. By creating an account or using the service, you accept them.`}
+      intro={`These terms are an agreement between you and ${OPERATOR} for the use of Ningua at ${DOMAIN}. By creating an account or using the service, you accept them.`}
       sections={[
         {
-          h: '1. What NurseLingua is',
+          h: '1. What Ningua is',
           p: [
-            'NurseLingua is a communication aid for routine care conversations. It speaks and displays a small set of reviewed nursing phrases in a patient language, and it can translate short typed or spoken text so both people can read what was said.',
-            'NurseLingua is not a medical device and does not provide diagnosis, treatment advice, or clinical decision support. It is not an emergency service and must not be used for emergencies.',
+            'Ningua is a communication aid for routine care conversations. It speaks and displays a small set of reviewed nursing phrases in a patient language, and it can translate short typed or spoken text so both people can read what was said.',
+            'Ningua is not a medical device and does not provide diagnosis, treatment advice, or clinical decision support. It is not an emergency service and must not be used for emergencies.',
             'For critical conversations, always use a qualified human interpreter. That includes informed consent, end-of-life discussions, complex diagnoses, medication changes, and safeguarding conversations.',
           ],
         },
@@ -79,7 +79,7 @@ export function TermsPage() {
         {
           h: '3. Acceptable use',
           p: [
-            'Use NurseLingua only for lawful, professional communication. Do not use it to harass, deceive, or discriminate against anyone.',
+            'Use Ningua only for lawful, professional communication. Do not use it to harass, deceive, or discriminate against anyone.',
             'Do not enter information you are not permitted to share with the operator of this deployment, and do not use it to process data you have no lawful basis to process.',
             'Do not attempt to break, overload, scrape, or reverse engineer the service, or to access another person’s conversations.',
           ],
@@ -101,7 +101,7 @@ export function TermsPage() {
         {
           h: '6. Availability and changes',
           p: [
-            'NurseLingua is provided on an as-available basis. It may be interrupted for maintenance, and features may change.',
+            'Ningua is provided on an as-available basis. It may be interrupted for maintenance, and features may change.',
             'A free or demonstration deployment comes with no availability guarantee. Do not build a clinical process that fails if this service is down. Keep your organisation’s standard interpreting route available at all times.',
           ],
         },
@@ -122,7 +122,7 @@ export function TermsPage() {
         {
           h: '9. Ending the agreement',
           p: [
-            'You may stop using NurseLingua at any time and ask for your account to be deleted. We may suspend accounts that breach these terms or that put patients at risk.',
+            'You may stop using Ningua at any time and ask for your account to be deleted. We may suspend accounts that breach these terms or that put patients at risk.',
           ],
         },
         {
@@ -142,7 +142,7 @@ export function PrivacyPage() {
     <LegalShell
       title="Privacy Policy"
       updated={EFFECTIVE}
-      intro={`This policy explains what ${OPERATOR} collects through NurseLingua at ${DOMAIN}, why, and what control you have. It covers data about you as a professional user and the patient information you choose to process through the app.`}
+      intro={`This policy explains what ${OPERATOR} collects through Ningua at ${DOMAIN}, why, and what control you have. It covers data about you as a professional user and the patient information you choose to process through the app.`}
       sections={[
         {
           h: '1. In short',
@@ -203,13 +203,13 @@ export function PrivacyPage() {
           h: '8. Patient information and children',
           p: [
             'Patient information is processed by you, the professional, on the basis that your workplace has established. This policy does not replace your organisation’s own notice to patients.',
-            'NurseLingua accounts are for professionals aged 18 and over. Information about a child may only be processed by that child’s care professional, and only as their role requires.',
+            'Ningua accounts are for professionals aged 18 and over. Information about a child may only be processed by that child’s care professional, and only as their role requires.',
           ],
         },
         {
           h: '9. Regulatory status',
           p: [
-            'NurseLingua is a communication aid, not a medical device, and the operator makes no claim of certification under any health-privacy or medical-device regime. Each deployment must assess its own obligations before handling real patient information.',
+            'Ningua is a communication aid, not a medical device, and the operator makes no claim of certification under any health-privacy or medical-device regime. Each deployment must assess its own obligations before handling real patient information.',
             'Where "demo" or offline mode is in use, data stays in the browser or in the demonstration store and must not be treated as a clinical record.',
           ],
         },
