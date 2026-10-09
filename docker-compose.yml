@@ -4,17 +4,21 @@
 #
 #   docker compose up -d
 #
+# Database/user default to `nurselingua` to match the backend's
+# SPRING_DATASOURCE_* defaults and .env.example.
 services:
   mysql:
     image: mysql:8.4
     container_name: ningua-mysql
     environment:
       MYSQL_ROOT_PASSWORD: rootpw
-      MYSQL_DATABASE: ningua
-      MYSQL_USER: ningua
+      MYSQL_DATABASE: nurselingua
+      MYSQL_USER: nurselingua
       MYSQL_PASSWORD: changeme
     ports:
-      - "3306:3306"
+      # Host port is overridable (MYSQL_PORT=3307 docker compose up -d mysql) for
+      # machines where a native MySQL already owns 3306.
+      - "${MYSQL_PORT:-3306}:3306"
     volumes:
       - ningua-mysql:/var/lib/mysql
     healthcheck:
