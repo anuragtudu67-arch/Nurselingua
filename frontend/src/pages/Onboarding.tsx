@@ -3,6 +3,7 @@
 // abandoned run can be completed later (spec §7.2).
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../auth/AuthContext';
 import { useStore } from '../state/StoreContext';
 import { useLocale } from '../i18n/locale';
 import { FooterDisclaimer } from '../components/AppShell';
@@ -17,6 +18,7 @@ interface Draft {
 }
 
 export default function Onboarding() {
+  const { token } = useAuth();
   const store = useStore();
   const nav = useNavigate();
   const { t } = useLocale();
@@ -49,7 +51,7 @@ export default function Onboarding() {
         patientLanguages: draft.patientLanguages,
         speechRate: draft.speechRate ?? 'slow',
         retention: draft.retention ?? '7days',
-      }, null);
+      }, token);
       try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
       nav('/home');
     } catch {

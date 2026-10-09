@@ -8,6 +8,8 @@ import { useLocale } from '../i18n/locale';
 import { FooterDisclaimer } from '../components/AppShell';
 import { Confirm, Skeleton } from '../components/ui';
 import { Icon } from '../components/icons';
+import Avatar from '../components/Avatar';
+import { getPref, setPref, type ThemePref } from '../theme';
 import type { Language, UsersMe } from '../api/client';
 import { LANGUAGES } from '../api/mockData';
 
@@ -29,6 +31,7 @@ export default function Settings() {
   const [patientLangs, setPatientLangs] = useState<string[]>([]);
   const [speechRate, setSpeechRate] = useState<'slow' | 'normal'>('slow');
   const [retention, setRetention] = useState<'24h' | '7days' | 'off'>('7days');
+  const [themePref, setThemePref] = useState<ThemePref>(getPref());
 
   const langs = store.offline ? LANGUAGES : store.languages;
 
@@ -89,6 +92,17 @@ export default function Settings() {
     <div className="page" style={{ maxWidth: 640 }}>
       <h1 className="title" style={{ marginBottom: '1.5rem' }}>{t('settings.title')}</h1>
 
+      {/* Identity */}
+      <section style={{ marginBottom: '1.5rem' }}>
+        <div className="identity">
+          <Avatar name={name || me?.name} email={me?.email} size={44} />
+          <div style={{ minWidth: 0 }}>
+            <div className="identity-name">{name || me?.name || 'Nurse'}</div>
+            {me?.email && <div className="identity-email">{me.email}</div>}
+          </div>
+        </div>
+      </section>
+
       {/* Name */}
       <section style={{ marginBottom: '1.5rem' }}>
         <label className="label" htmlFor="settings-name">Your name</label>
@@ -99,6 +113,27 @@ export default function Settings() {
           onChange={(e) => setName(e.target.value)}
           placeholder="Nurse name"
         />
+      </section>
+
+      {/* Appearance */}
+      <section style={{ marginBottom: '1.5rem' }}>
+        <h2 className="onb-q">Appearance</h2>
+        <div className="seg" role="radiogroup" aria-label="Appearance">
+          {(['light', 'dark', 'system'] as const).map((p) => (
+            <button
+              key={p}
+              role="radio"
+              aria-checked={themePref === p}
+              onClick={() => { setPref(p); setThemePref(p); }}
+            >
+              {p === 'light' ? 'Light' : p === 'dark' ? 'Dark' : 'System'}
+            </button>
+          ))}
+        </div>
+        <p className="setting-help">
+          Light is the default. <strong>System</strong> follows your device and updates
+          automatically. This choice is saved on this device.
+        </p>
       </section>
 
       {/* Nurse language */}

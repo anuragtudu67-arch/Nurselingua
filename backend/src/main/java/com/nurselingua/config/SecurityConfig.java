@@ -38,6 +38,7 @@ public class SecurityConfig {
             .requestMatchers("/api/health", "/actuator/health", "/h2-console/**").permitAll()
             .requestMatchers("/api/v1/webhooks/n8n").permitAll()      // authenticated by shared secret
             .requestMatchers("/api/v1/languages", "/api/v1/categories").permitAll()
+            .requestMatchers("/api/v1/phrases", "/api/v1/phrases/*").permitAll()  // public catalog; auth only enriches favorites
             .anyRequest().authenticated())
         .exceptionHandling(e -> e.authenticationEntryPoint(
             new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))

@@ -7,6 +7,11 @@ import { AuthProvider } from './auth/AuthContext';
 import { StoreProvider } from './state/StoreContext';
 import { LocaleCtx, translate, type LocaleCode } from './i18n/locale';
 import { ToastHost } from './components/ui';
+import { initTheme } from './theme';
+
+// Resolve Light/Dark/System once on startup (index.html already applied it
+// pre-paint; this keeps System in sync with OS changes at runtime).
+initTheme();
 
 // The UI locale is English by default and localizes to the nurse's language
 // (spec §7.1). Chosen during onboarding; persisted; 'en' fallback always safe.

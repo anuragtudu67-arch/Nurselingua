@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="NurseLingua is a communication aid for routine nursing care. Speak reviewed nursing phrases and short translations so you and your patient can read and hear each other in both languages." />
-    <meta name="theme-color" content="#0d1117" />
-    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#f6f8f7" />
+    <meta name="color-scheme" content="light dark" />
     <meta name="robots" content="index,follow" />
 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -23,10 +23,27 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
     <title>NurseLingua | Speak your patient's language</title>
   </head>
   <body>
+    <script>
+      // Apply the saved appearance before first paint so there is no flash.
+      // Default is Light; Dark/System are opt-in (see src/theme.ts).
+      (function () {
+        try {
+          var pref = localStorage.getItem('nurselingua-theme') || 'light';
+          var dark = pref === 'dark' ||
+            (pref === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          var theme = dark ? 'dark' : 'light';
+          document.documentElement.setAttribute('data-theme', theme);
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute('content', dark ? '#0b0f14' : '#f6f8f7');
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'light');
+        }
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

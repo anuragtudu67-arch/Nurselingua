@@ -1,6 +1,5 @@
 // Landing: what the app does, how it works, one dominant action.
-import { Link, Navigate } from 'react-router-dom';
-import { useAuth } from '../auth/AuthContext';
+import { Link } from 'react-router-dom';
 import { useLocale } from '../i18n/locale';
 import { FooterDisclaimer } from '../components/AppShell';
 import { Icon, type IconName } from '../components/icons';
@@ -30,13 +29,45 @@ const STEPS: ReadonlyArray<{ icon: IconName; title: string; body: string }> = [
 
 const PATIENT_LANGS = ['Español', 'हिन्दी', 'বাংলা', 'العربية', 'Français', '中文', 'தமிழ்', 'اردو'];
 
-export default function Landing() {
-  const { token } = useAuth();
-  const { t } = useLocale();
+// A still, honest preview of the product: two turns, both languages, both roles.
+// Real UI patterns instead of screenshots, stock photos, or generated imagery.
+function HeroDemo() {
+  return (
+    <div className="hero-demo" aria-label="Example of a two-sided conversation">
+      <div className="hd-head">
+        <span className="hd-dot hd-dot-nurse" aria-hidden="true" />
+        Nurse · English
+        <span className="hd-swap" aria-hidden="true"><Icon name="swap" size={12} /></span>
+        <span className="hd-dot hd-dot-patient" aria-hidden="true" />
+        Patient · Español
+      </div>
 
-  // Signed-in visitors belong inside the app. Declaring <Navigate> keeps the
-  // redirect out of render (react-router warns on navigate() during render).
-  if (token) return <Navigate to="/home" replace />;
+      <div className="turn nurse">
+        <div className="turn-bubble">
+          <div className="turn-speaker">Nurse</div>
+          <p className="turn-source">Where does it hurt?</p>
+          <p className="turn-target">¿Dónde le duele?</p>
+        </div>
+      </div>
+
+      <div className="turn patient">
+        <div className="turn-bubble">
+          <div className="turn-speaker">Patient</div>
+          <p className="turn-source">Me duele aquí desde esta mañana.</p>
+          <p className="turn-target">It hurts here since this morning.</p>
+        </div>
+      </div>
+
+      <div className="hd-note small">
+        <Icon name="speaker" size={15} />
+        <span>Both sides are spoken aloud, with a native voice.</span>
+      </div>
+    </div>
+  );
+}
+
+export default function Landing() {
+  const { t } = useLocale();
 
   return (
     <main id="main" className="page page-wide">
@@ -66,11 +97,7 @@ export default function Landing() {
           </p>
         </div>
         <div className="bridge-visual">
-          <div className="orb">
-            <span className="orb-lang">Nurse · English</span>
-            “Where does it hurt?”
-            <small>¿Dónde le duele? · दर्द कहाँ है? · ব্যথা কোথায়?</small>
-          </div>
+          <HeroDemo />
         </div>
       </header>
 

@@ -59,7 +59,11 @@ class NurseJourneyIntegrationTest {
   }
 
   @Test @Order(2)
-  void unauthorizedRequestsAreRejected() throws Exception {
+  void phraseCatalogIsPublicAndUnauthorizedRoutesStillReject() throws Exception {
+    // The reviewed phrasebook is a public catalog: anonymous reads are allowed and
+    // return neutral phrase data, while user-scoped endpoints still demand a token.
+    mvc.perform(get("/api/v1/phrases?category=pain&lang=es")).andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].baseText").isNotEmpty());
     mvc.perform(get("/api/v1/users/me")).andExpect(status().isUnauthorized());
     mvc.perform(post("/api/v1/webhooks/n8n")
             .header("X-N8N-Secret", "wrong").contentType("application/json")

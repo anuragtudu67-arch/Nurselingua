@@ -41,9 +41,9 @@ docker compose up -d          # from repo root
 ../.tools/apache-maven-3.9.9/bin/mvn spring-boot:run
 ```
 
-Flyway migrates and seeds on boot: 12 tables, 13 languages (en + 12 patient
-languages), 5 categories, 72 phrases, 576 professionally reviewed translations
-(es, hi, bn, fr, ar, zh, ta, ur) with romanization for every non-Latin script.
+Flyway migrates and seeds on boot: 12 tables, 9 languages (en + 8 patient
+languages: es, hi, bn, fr, ar, zh, ta, ur), 5 categories, 72 phrases, and 576
+professionally reviewed translations with romanization for every non-Latin script.
 
 Health: `GET http://localhost:8080/api/health`.
 

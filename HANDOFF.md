@@ -1,7 +1,7 @@
 # NurseLingua handoff
 
 Where we left off, what is verified, and what is still open.
-Last updated: 2026-09-18.
+Last updated: 2026-09-18 (second pass: UI appeal + catalog auth fix).
 
 ---
 
@@ -29,6 +29,8 @@ product (courses, lessons, vocabulary) and does not implement the NurseLingua co
 |---|---|
 | `npm run build` (tsc + vite) | passes, zero errors |
 | `npm run verify:ui` | 15/15, exits 1 on any violation |
+| `npm run verify:api` | 52 checks pass |
+| Backend tests (`mvn test`) | 13/13, including the anonymous-phrase-catalog test |
 | Routes walked in headless Chrome | `/`, `/terms`, `/privacy`, `/sign-in`, `/sign-up`, `/interpreter`, `/home`, `/phrasebook`, `/history`, `/settings`, `/conversation`, `/conversation/:id` |
 | Console errors / HTTP >= 400 | none, on every route, against the real API |
 | Backend checklist (48 checks) | 45 pass, 3 known (section 5) |
@@ -49,7 +51,28 @@ Design constraints, enforced by `tools/verify-ui.mjs` rather than by eye:
 Chips and badges are still rounded: they are labels and indicators, not buttons.
 Say the word if you want those squared off too.
 
-## 3. Changed in this pass
+## 2b. Changed in the second pass (this session)
+
+**Open decision 1 is now resolved.** `/api/v1/phrases*` is public, exactly as `docs/API.md`
+always claimed: `SecurityConfig` permits `/api/v1/phrases` and `/api/v1/phrases/*`, the
+favorites enrichment still switches on auth inside `PhraseService`, and the integration
+test now asserts anonymous phrase reads return 200 while `/users/me` still returns 401.
+
+**Frontend appeal pass**, guided by the ui-ux-pro-max skill (healthcare profile:
+Accessible & Ethical pattern, calm teal + health green, no social-proof patterns): hero
+visual replaced with a real product-style two-sided conversation preview (`HeroDemo`),
+Plus Jakarta Sans display face for headings and the brand mark, quieter background with
+lifted card surfaces and a teal hover lift, tinted primary-button hover glow, underlined
+footer legal links, tinted focus rings, a static dot-grid behind the hero, centered hero
+on mobile. No scroll animation, no cursor animation, no new motion types.
+
+**Tooling**: CodeRabbit CLI installed at `C:\Users\anura\AppData\Local\Programs\coderabbit`
+(`cr` 0.7.8); `cr doctor` passes except auth. The ui-ux-pro-max skill is installed at
+`.agents/skills/ui-ux-pro-max` (gitignored). Python is NOT installed on this machine, so
+the skill's search script cannot run; its guidance was taken straight from the bundled CSV
+reference data instead. Install Python 3 if you want the search tool working.
+
+## 3. Changed in the first pass
 
 **Frontend**
 
@@ -98,17 +121,17 @@ certification the project does not have, but they are not legal advice.
 
 ## 5. Open decisions
 
-1. **`/api/v1/phrases` is authenticated but `docs/API.md` calls it public.** This is the
-   mismatch that produced the original 401 on the landing page. Either add
-   `/api/v1/phrases/**` to the `permitAll` list in `SecurityConfig` (matches the docs and
-   the null-tolerant code in `CatalogControllers`), or change the docs. Auth behaviour was
-   deliberately left untouched.
-2. **`README.md` describes a different product** (Ningua, a four-stage language-learning
-   app, "frontend only, backend reserved"). The code is NurseLingua with a working Spring
-   API. This is the first thing a reviewer or supervisor reads.
-3. **Free text only translates when the sentence is in the offline glossary.** Anything else
+1. **Free text only translates when the sentence is in the offline glossary.** Anything else
    returns a clean 503 "Translation is unavailable". That is the designed behaviour with
    `N8N_ENABLED=false` and no vendor keys, not a bug.
+2. **21st.dev is wired but unused.** `.mcp.json` points at its MCP endpoint, but
+   `API_KEY_21ST` is empty and MCP is not reachable from this session, so no 21st.dev
+   components were pulled in. Its components are Tailwind + Radix based and would add
+   dependencies; the current hand-written CSS already satisfies every design constraint.
+   Say the word if you want specific components converted anyway.
+
+(Former decisions 1 and 2 are resolved: the phrase catalog is now public per the docs, and
+README.md already describes NurseLingua.)
 
 ## 6. Owner actions
 
@@ -132,16 +155,13 @@ git push -u origin main
 Do not run `git add` from your Desktop root. That folder is a separate repository with zero
 commits, and adding there would sweep your whole Desktop.
 
-**c. CodeRabbit**, for review before each deploy (PowerShell, then from the repo root):
-
-```powershell
-irm https://cli.coderabbit.ai/install.ps1 | iex
-```
+**c. CodeRabbit**, for review before each deploy. The CLI is already installed; open a
+NEW terminal so `cr` is on PATH (or use the full path
+`C:\Users\anura\AppData\Local\Programs\coderabbit\cr.exe`), then from the repo root:
 
 ```bash
 cr auth login              # browser sign-in, add --region eu if you are in the EU
-cr --include-untracked     # needed until the first commit lands
-cr doctor                  # if setup or auth fails
+cr review                  # review uncommitted work; cr doctor if setup fails
 ```
 
 Then install the CodeRabbit GitHub app on the repo for pull-request reviews.

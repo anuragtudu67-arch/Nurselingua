@@ -2,6 +2,8 @@
 // A persistent "Request an interpreter" shortcut is one tap away everywhere.
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useLocale } from '../i18n/locale';
+import { useAuth } from '../auth/AuthContext';
+import Avatar from './Avatar';
 import { Icon, type IconName } from './icons';
 
 const NAV: ReadonlyArray<{ to: string; labelKey: 'nav.home' | 'nav.phrasebook' | 'nav.history' | 'nav.settings'; icon: IconName }> = [
@@ -15,6 +17,7 @@ export default function AppShell({ children, focused }: { children: React.ReactN
   const loc = useLocation();
   const nav = useNavigate();
   const { t } = useLocale();
+  const { name, email } = useAuth();
 
   const active = NAV.find((n) => loc.pathname.startsWith(n.to))?.labelKey
     ?? (loc.pathname.startsWith('/conversation') ? 'nav.conversation' : 'nav.home');
@@ -39,6 +42,14 @@ export default function AppShell({ children, focused }: { children: React.ReactN
           </NavLink>
         ))}
         <div className="spacer" />
+        <Link to="/settings" className="identity" style={{ textDecoration: 'none', marginBottom: '.6rem' }}
+          aria-label={`Account: ${name || email || 'Nurse'}`}>
+          <Avatar name={name} email={email} size={34} />
+          <div style={{ minWidth: 0 }}>
+            <div className="identity-name">{name || 'Nurse'}</div>
+            {email && <div className="identity-email">{email}</div>}
+          </div>
+        </Link>
         <button className="btn btn-secondary btn-block" onClick={() => nav('/interpreter')}>
           <Icon name="phone" size={17} /> {t('disclaimer.interpreter')}
         </button>
@@ -46,7 +57,7 @@ export default function AppShell({ children, focused }: { children: React.ReactN
 
       <div className="content">
         <div className="topbar">
-          <strong style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem' }}>{t(active)}</strong>
+          <strong style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.2rem' }}>{t(active)}</strong>
           <span style={{ flex: 1 }} />
           <button className="btn btn-secondary" onClick={() => nav('/interpreter')}
             aria-label={t('disclaimer.interpreter')}>
