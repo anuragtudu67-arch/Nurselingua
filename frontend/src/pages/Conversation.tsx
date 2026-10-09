@@ -147,8 +147,13 @@ export default function Conversation() {
     try {
       // 1. presign upload
       const presign = await store.submitStt('demo-ref', patientLang, token);
-      // 2. poll STT status (simulated)
-      const status = await store.sttStatus(presign.id, token);
+      // 2. poll STT status until the pipeline settles (the simulated backend
+      // completes STT jobs after ~2.5s, so a single immediate poll never sees it)
+      let status = await store.sttStatus(presign.id, token);
+      for (let i = 0; i < 15 && status.status !== 'completed' && status.status !== 'failed'; i++) {
+        await new Promise((r) => setTimeout(r, 600));
+        status = await store.sttStatus(presign.id, token);
+      }
       if (status.status === 'completed' && status.result?.transcript) {
         await store.addTurn(id, {
           speaker: 'PATIENT',
