@@ -11,7 +11,10 @@ import { useLocale } from '../i18n/locale';
 import { FooterDisclaimer } from '../components/AppShell';
 import { Icon } from '../components/icons';
 import type { Language } from '../api/client';
-import { STAGES, setDefaultStage, setGoal, type Stage } from '../state/prefs';
+import {
+  STAGES, setDefaultStage, setGoal, setOnboardedLocally,
+  getOnboardingStep, setOnboardingStep, type Stage,
+} from '../state/prefs';
 
 const DRAFT_KEY = 'nurselingua-onboarding-draft';
 const GOAL_CHOICES = [0, 2, 3, 5, 7];
@@ -31,9 +34,8 @@ export default function Onboarding() {
   const [draft, setDraft] = useState<Draft>(() => {
     try { return JSON.parse(localStorage.getItem(DRAFT_KEY) ?? '{}'); } catch { return {}; }
   });
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(() => getOnboardingStep());
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(false);
 
   useEffect(() => {
     store.languages.forEach((l) => undefined); // touch for lint
@@ -44,12 +46,27 @@ export default function Onboarding() {
     try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch { /* private */ }
   }, [draft]);
 
+  // Resume the step the user abandoned, so reopening continues where they left off.
+  useEffect(() => { setOnboardingStep(step); }, [step]);
+
   const patientLangs = languages.filter((l) => l.code !== (draft.nurseLanguage ?? 'en'));
   const nurse = languages.find((l) => l.code === draft.nurseLanguage);
   const canFinish = Boolean(draft.nurseLanguage) && (draft.patientLanguages?.length ?? 0) > 0;
 
   const finish = async () => {
     setSaving(true);
+    // Completion is device-local and authoritative: write it synchronously,
+    // before navigation, so the guard never bounces a finished user back to
+    // step 1 even if the server save is slow, unreachable, or races us.
+    setOnboardedLocally(true);
+    // Local preferences: the stage becomes the account default (profiles
+    // inherit it), and the goal applies to every profile chosen here.
+    setDefaultStage(draft.stage ?? 'blend');
+    if ((draft.goal ?? 0) > 0) {
+      (draft.patientLanguages ?? []).forEach((code) => setGoal(code, draft.goal ?? 0));
+    }
+    // Best-effort server sync via the endpoint that actually exists. A failure
+    // here must never block or bounce the user; the local state stands.
     try {
       await store.saveOnboarding({
         nurseLanguage: draft.nurseLanguage,
@@ -57,18 +74,12 @@ export default function Onboarding() {
         speechRate: draft.speechRate ?? 'slow',
         retention: draft.retention ?? '7days',
       }, token);
-      // Local preferences: the stage becomes the account default (profiles
-      // inherit it), and the goal applies to every profile chosen here.
-      setDefaultStage(draft.stage ?? 'blend');
-      if ((draft.goal ?? 0) > 0) {
-        (draft.patientLanguages ?? []).forEach((code) => setGoal(code, draft.goal ?? 0));
-      }
-      try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
-      nav('/home');
-    } catch {
-      setError(true);
-      setSaving(false);
-    }
+    } catch { /* device-local completion remains authoritative */ }
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+      setOnboardingStep(0);
+    } catch { /* ignore */ }
+    nav('/home');
   };
 
   const steps = [
@@ -180,7 +191,8 @@ export default function Onboarding() {
   const pct = Math.round(((step + 1) / steps.length) * 100);
 
   return (
-    <div className="page" style={{ maxWidth: 640 }}>
+    <div className="page mesh" style={{ maxWidth: 640 }}>
+      <div className="onb-surface">
       <p className="onb-progress" id="onb-progress-label">
         Step {step + 1} of {steps.length}
         {nurse ? ` · ${nurse.nativeName}` : ''}
@@ -200,8 +212,7 @@ export default function Onboarding() {
         ))}
       </div>
       <span className="visually-hidden">{pct}% complete</span>
-      {error && <p role="alert" style={{ color: 'var(--error)' }}>Couldn't save. Please retry.</p>}
-      {steps[step]}
+      <div className="onb-step-body">{steps[step]}</div>
       <div className="row" style={{ justifyContent: 'space-between', marginTop: '1.25rem' }}>
         <button className="btn btn-quiet" disabled={step === 0}
           onClick={() => setStep((s) => Math.max(0, s - 1))}>
@@ -220,6 +231,7 @@ export default function Onboarding() {
             {saving ? t('common.loading') : t('onboarding.finish')}
           </button>
         )}
+      </div>
       </div>
       <FooterDisclaimer />
     </div>

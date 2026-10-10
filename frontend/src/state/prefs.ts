@@ -258,6 +258,37 @@ export function isSuggestionDismissed(): boolean {
   return Date.now() - getSuggestDismissedAt() < 24 * 3600_000;
 }
 
+// ---------- onboarding completion (device-local, authoritative) ----------
+//
+// Whether onboarding is done must NOT depend on a server round-trip: the guard
+// used to read /users/me once and never refreshed it, so finishing onboarding
+// bounced the user back to step 1. Completion is therefore device-local and
+// authoritative, exactly like stage/goal/theme above, and written synchronously
+// on save before navigation. The server settings are still saved best-effort.
+const ONBOARDED_KEY = 'ningua-onboarded';
+
+export function isOnboardedLocally(): boolean {
+  return read(ONBOARDED_KEY) === '1';
+}
+export function setOnboardedLocally(done: boolean): void {
+  if (done) write(ONBOARDED_KEY, '1');
+  else remove(ONBOARDED_KEY);
+  emit();
+}
+
+// ---------- onboarding step resume (device-local) ----------
+const STEP_KEY = 'ningua-onboarding-step';
+
+export function getOnboardingStep(): number {
+  const v = Number(read(STEP_KEY));
+  return Number.isFinite(v) && v >= 0 ? Math.min(9, Math.round(v)) : 0;
+}
+export function setOnboardingStep(step: number): void {
+  if (step <= 0) remove(STEP_KEY);
+  else write(STEP_KEY, String(step));
+  emit();
+}
+
 // ---------- sign out / clear local preferences ----------
 
 /** Clears only the preference keys owned by this module (auth/session and
@@ -265,6 +296,7 @@ export function isSuggestionDismissed(): boolean {
 export function clearLocalPreferences(): void {
   [
     DEFAULT_STAGE_KEY, ACTIVE_KEY, NAME_KEY, PHOTO_KEY, AVATAR_KEY, SUGGEST_KEY,
+    ONBOARDED_KEY, STEP_KEY,
   ].forEach(remove);
   try {
     const owned: string[] = [];
