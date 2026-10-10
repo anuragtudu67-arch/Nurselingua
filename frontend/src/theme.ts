@@ -11,7 +11,12 @@ export type ThemePref = 'light' | 'dark' | 'system';
 export type EffectiveTheme = 'light' | 'dark';
 
 const KEY = 'nurselingua-theme';
-const THEME_COLOR: Record<EffectiveTheme, string> = { light: '#f6f8f7', dark: '#0b0f14' };
+
+/** Meta theme-color comes from the token set (zero hex in TS). */
+function metaColor(): string {
+  return getComputedStyle(document.documentElement)
+    .getPropertyValue('--meta-color').trim();
+}
 
 const prefersDark = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -37,7 +42,8 @@ export function apply(pref: ThemePref): void {
   const theme = effective(pref);
   document.documentElement.setAttribute('data-theme', theme);
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', THEME_COLOR[theme]);
+  const color = metaColor();
+  if (meta && color) meta.setAttribute('content', color);
 }
 
 export function setPref(pref: ThemePref): void {

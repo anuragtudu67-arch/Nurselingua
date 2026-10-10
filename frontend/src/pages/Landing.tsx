@@ -1,5 +1,5 @@
 // Landing: what the app does, how it works, the four support stages with a
-// real example, and one dominant action. Header carries the Ningua mark plus
+// real example, and one dominant action. Header carries the NurseLinguo mark plus
 // How it works / Languages / Sign in, exactly one primary CTA and one quiet
 // secondary CTA in the hero.
 import { useState } from 'react';
@@ -152,10 +152,11 @@ export default function Landing() {
   const { t } = useLocale();
 
   return (
-    <main id="main" className="page page-wide">
+    <main id="main" className="page page-wide mesh">
       <nav className="nav-public" aria-label="Public">
         <Link to="/" className="mark" style={{ textDecoration: 'none', color: 'var(--ink)' }}>
-          {t('app.name')}
+          <span className="brand-ico" aria-hidden="true"><Icon name="swap" size={18} /></span>
+          {' '}{t('app.name')}
         </Link>
         <span style={{ flex: 1 }} />
         <span className="pub-links">
@@ -201,7 +202,7 @@ export default function Landing() {
 
       <h2 className="section-h">How much support you want</h2>
       <p className="muted small" style={{ maxWidth: 640, marginTop: '-.4rem' }}>
-        Ningua moves with you from familiar-language support toward confident use of the
+        NurseLinguo moves with you from familiar-language support toward confident use of the
         patient’s language. Pick a stage to see the same reviewed phrase at that level.
         A stage is a preference, not a score; you can switch back at any time.
       </p>

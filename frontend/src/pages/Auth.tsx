@@ -24,11 +24,11 @@ export default function Auth({ mode }: { mode: 'in' | 'up' }) {
   };
 
   return (
-    <main id="main" className="page" style={{ maxWidth: 420 }}>
+    <main id="main" className="page mesh" style={{ maxWidth: 420 }}>
       <nav className="nav-public" aria-label="Public">
         <Link to="/" className="mark">{t('app.name')}</Link>
       </nav>
-      <div className="card">
+      <div className="auth-card">
         <h1 className="title" style={{ fontSize: '1.5rem' }}>
           {mode === 'in' ? t('landing.signin') : 'Create your account'}
         </h1>

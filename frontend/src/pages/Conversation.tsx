@@ -41,6 +41,9 @@ export default function Conversation() {
 
   // mic state
   const [processing, setProcessing] = useState(false);
+  const [sttTimeout, setSttTimeout] = useState(false);
+  const [lastBlob, setLastBlob] = useState<Blob | null>(null);
+  const sttAbort = useRef<AbortController | null>(null);
 
   // scroll ref
   const listEnd = useRef<HTMLDivElement>(null);
@@ -139,21 +142,31 @@ export default function Conversation() {
     }
   };
 
-  // Handle patient audio recording
+  // Handle patient audio recording. Deadline-based polling: ~300ms first,
+  // backing off to ~1s, total <=20s. Pending shows a neutral Listening state
+  // (never error styling); an empty backend result means "couldn't hear";
+  // hitting the deadline offers a retry instead of falsely blaming the patient.
   const handlePatientAudio = async (blob: Blob | null) => {
     if (!blob || !id) return;
+    setLastBlob(blob);
+    sttAbort.current?.abort();
+    const ctrl = new AbortController();
+    sttAbort.current = ctrl;
     setProcessing(true);
+    setSttTimeout(false);
     setLastError(null);
     try {
-      // 1. presign upload
       const presign = await store.submitStt('demo-ref', patientLang, token);
-      // 2. poll STT status until the pipeline settles (the simulated backend
-      // completes STT jobs after ~2.5s, so a single immediate poll never sees it)
+      const deadline = Date.now() + 20000;
+      let delay = 300;
       let status = await store.sttStatus(presign.id, token);
-      for (let i = 0; i < 15 && status.status !== 'completed' && status.status !== 'failed'; i++) {
-        await new Promise((r) => setTimeout(r, 600));
+      while (status.status !== 'completed' && status.status !== 'failed' && Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, delay));
+        if (ctrl.signal.aborted) return;
+        delay = Math.min(Math.round(delay * 1.6), 1000);
         status = await store.sttStatus(presign.id, token);
       }
+      if (ctrl.signal.aborted) return;
       if (status.status === 'completed' && status.result?.transcript) {
         await store.addTurn(id, {
           speaker: 'PATIENT',
@@ -161,15 +174,25 @@ export default function Conversation() {
           sttConfidence: status.result.confidence ?? undefined,
         }, token);
         load();
-      } else {
+      } else if (status.status === 'failed' || status.status === 'completed') {
+        // backend settled with nothing usable
         setLastError(t('conversation.couldntHear'));
+      } else {
+        // deadline hit while the backend is still working
+        setSttTimeout(true);
       }
     } catch (err: any) {
-      setLastError(err?.message ?? 'Could not process audio');
+      if (!ctrl.signal.aborted) setLastError(err?.message ?? 'Could not process audio');
     } finally {
-      setProcessing(false);
+      if (!ctrl.signal.aborted) setProcessing(false);
     }
   };
+
+  // Abort the in-flight poll when the conversation changes or we unmount,
+  // so no dangling fetch keeps a dead component busy.
+  useEffect(() => {
+    return () => sttAbort.current?.abort();
+  }, [id]);
 
   // Patient text input (manual entry)
   const [patientInput, setPatientInput] = useState('');
@@ -295,10 +318,21 @@ export default function Conversation() {
         </div>
       )}
 
-      {/* Processing indicator */}
+      {/* STT pending: neutral progress, never error styling */}
       {processing && (
-        <div style={{ textAlign: 'center', padding: '.75rem', color: 'var(--accent)', fontWeight: 700 }}>
-          {t('conversation.processing')}…
+        <div className="stt-pending" role="status">
+          <span className="dot" aria-hidden="true" /> Listening…
+        </div>
+      )}
+
+      {/* Deadline hit while backend still transcribing: honest timeout + retry */}
+      {sttTimeout && !processing && (
+        <div className="stt-pending" role="status" style={{ justifyContent: 'space-between' }}>
+          <span>Still transcribing. Check the backend, then retry.</span>
+          <button className="btn btn-secondary" style={{ minHeight: 36 }}
+            onClick={() => handlePatientAudio(lastBlob)}>
+            Retry
+          </button>
         </div>
       )}
 

@@ -1,4 +1,4 @@
-// Ningua API client, mirroring the Spring Boot /api/v1 contract (docs/API.md).
+// NurseLinguo API client, mirroring the Spring Boot /api/v1 contract (docs/API.md).
 // Offline demo mode: if the backend is unreachable, in-browser mockData serves the
 // exact same shapes (documented swap; see README "Demo-first data layer").
 

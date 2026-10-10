@@ -1,0 +1,198 @@
+/* ============================================================
+   NurseLinguo tokens.css — SINGLE SOURCE OF TRUTH FOR ALL COLOR.
+   Every color/radius/shadow/font in the app resolves from a var
+   defined here. components + styles.css contain ZERO hex/rgb
+   literals (grep-enforced). Light + dark define the same names;
+   the pre-paint script in index.html flips data-theme before
+   first paint (System is the default).
+   Palette policy (master brief 1.3): deep teal primary, warm
+   amber reserved for the PATIENT-side line only, no violet.
+   ============================================================ */
+
+/* ---------- Light (default) ---------- */
+:root {
+  color-scheme: light;
+  --meta-color: #f4f7f6;
+
+  /* surfaces */
+  --bg:         #f4f7f6;   /* calm near-solid canvas (content screens) */
+  --bg-card:    #ffffff;
+  --bg-raised:  #e9efed;
+  --bg-input:   #ffffff;
+
+  /* ink */
+  --ink:        #10201d;   /* body text, 15:1 on card */
+  --ink-muted:  #4f5d5a;   /* 7.4:1 on card */
+  --ink-faint:  #62706d;   /* 5.3:1 on card */
+
+  /* lines */
+  --border:     #dbe4e1;
+  --border-l:   #e7edeb;
+
+  /* primary: deep teal */
+  --accent:     #0f766e;   /* text/links, 5.4:1 on bg */
+  --accent-solid:#0f766e;  /* solid fills, white text 5.3:1 */
+  --accent-hover:#0b5f58;
+  --accent-bg:  rgba(15,118,110,.08);
+  --accent-line:rgba(15,118,110,.40);
+  --on-accent:  #ffffff;
+  --ring:       rgba(15,118,110,.30);
+
+  /* speaker roles: nurse = teal family, patient = amber ONLY */
+  --nurse:      #0f766e;
+  --nurse-dim:  #0b5f58;
+  --nurse-bg:   rgba(15,118,110,.09);
+  --nurse-line: rgba(15,118,110,.28);
+  --patient:    #8a4f06;   /* amber ink, >4.5:1 on card and on its own tint */
+  --patient-dim:#743f04;
+  --patient-bg: rgba(164,95,10,.08);
+  --patient-line:rgba(164,95,10,.30);
+
+  /* semantic */
+  --error:      #b91c1c;
+  --error-bg:   rgba(185,28,28,.07);
+  --error-line: rgba(185,28,28,.30);
+  --success:    #15803d;
+  --warning:    #8a5306;
+  --warning-bg: rgba(161,98,7,.14);
+  --on-solid:   #ffffff;
+  --on-nurse:   #ffffff;
+  --on-patient: #ffffff;
+
+  /* radii (clay geometry: 16-20 interactive, 24-28 glass) */
+  --radius:     14px;
+  --radius-lg:  18px;
+  --radius-sm:  8px;
+  --radius-xl:  26px;
+  --radius-pill:999px;
+
+  /* shadows */
+  --shadow-btn: 0 2px 0 rgba(16,32,29,.16);
+  --shadow-card:0 1px 2px rgba(16,32,29,.05);
+  --shadow-hover:0 8px 22px rgba(16,32,29,.10);
+
+  /* CLAY: soft colored drop + inset top white + inset bottom shade */
+  --clay-drop:  16,32,29;
+  --shadow-clay:0 14px 28px -12px rgba(var(--clay-drop),.35),
+                inset 0 2px 2px rgba(255,255,255,.7),
+                inset 0 -8px 14px rgba(var(--clay-drop),.14);
+  --shadow-clay-hover:0 18px 32px -12px rgba(var(--clay-drop),.4),
+                inset 0 2px 2px rgba(255,255,255,.75),
+                inset 0 -8px 14px rgba(var(--clay-drop),.16);
+  --shadow-clay-active:0 6px 12px -8px rgba(var(--clay-drop),.3),
+                inset 0 2px 4px rgba(var(--clay-drop),.22);
+
+  /* GLASS (hero/chrome only) */
+  --glass-bg:      rgba(255,255,255,.58);
+  --glass-border:  rgba(255,255,255,.65);
+  --glass-hi:      rgba(255,255,255,.85);
+  --glass-ambient: 0 24px 60px -28px rgba(11,95,88,.35);
+  --glass-blur:    blur(20px) saturate(160%);
+
+  /* GLOW: primary CTA only */
+  --glow-cta: 0 0 22px -4px rgba(13,148,136,.55);
+
+  /* MESH (auth screens only) */
+  --mesh-base:  #f4f7f6;
+  --mesh-teal:  rgba(13,110,100,.16);
+  --mesh-amber: rgba(180,105,25,.14);
+  --mesh-slate: rgba(30,50,48,.10);
+  --mesh-dot:   rgba(79,93,90,.13);
+
+  /* overlay */
+  --overlay: rgba(10,20,18,.55);
+
+  /* avatar preset backgrounds (no hex in TSX) */
+  --av-bridge:#0f766e; --av-wave:#2563eb; --av-arc:#3a4fd8;
+  --av-orbit:#0d9488;  --av-dawn:#a16207; --av-ledger:#4b5563;
+
+  /* type */
+  --font:       'Inter Variable','Inter',system-ui,-apple-system,sans-serif;
+  --font-display:'Inter Variable','Inter',system-ui,sans-serif;
+
+  /* motion */
+  --ease: cubic-bezier(0.2,0.8,0.2,1);
+  --t-fast: 140ms;
+  --t-med:  200ms;
+
+  --nav-h:      60px;
+  --rail-w:     220px;
+  --bottombar-h:64px;
+}
+
+/* ---------- Dark ---------- */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --meta-color: #0b0f14;
+
+  --bg:         #0b0f14;
+  --bg-card:    #111a20;
+  --bg-raised:  #1a242b;
+  --bg-input:   #0e141a;
+
+  --ink:        #e9eef2;
+  --ink-muted:  #9fadb2;
+  --ink-faint:  #7c8a90;
+
+  --border:     #263340;
+  --border-l:   #1c2732;
+
+  --accent:     #5eead4;
+  --accent-solid:#0f766e;
+  --accent-hover:#12877d;
+  --accent-bg:  rgba(94,234,212,.10);
+  --accent-line:rgba(94,234,212,.35);
+  --on-accent:  #ffffff;
+  --ring:       rgba(94,234,212,.35);
+
+  --nurse:      #5eead4;
+  --nurse-dim:  #2dd4bf;
+  --nurse-bg:   rgba(45,212,191,.10);
+  --nurse-line: rgba(45,212,191,.30);
+  --patient:    #fbbf24;
+  --patient-dim:#f59e0b;
+  --patient-bg: rgba(251,191,36,.09);
+  --patient-line:rgba(251,191,36,.32);
+
+  --error:      #f85149;
+  --error-bg:   rgba(248,81,73,.10);
+  --error-line: rgba(248,81,73,.35);
+  --success:    #3fb950;
+  --warning:    #d29922;
+  --warning-bg: rgba(210,153,34,.15);
+  --on-solid:   #ffffff;
+  /* solid nurse/patient fills are bright in dark mode, so their ink must be dark */
+  --on-nurse:   #06231f;
+  --on-patient: #1b1305;
+
+  --shadow-btn: 0 2px 0 rgba(0,0,0,.55);
+  --shadow-card:0 1px 3px rgba(0,0,0,.35);
+  --shadow-hover:0 8px 24px rgba(0,0,0,.5);
+
+  /* clay, dark: same geometry, darker body, highlight ~12% white */
+  --clay-drop:  0,0,0;
+  --shadow-clay:0 14px 28px -12px rgba(0,0,0,.6),
+                inset 0 2px 2px rgba(255,255,255,.12),
+                inset 0 -8px 14px rgba(0,0,0,.35);
+  --shadow-clay-hover:0 18px 32px -12px rgba(0,0,0,.65),
+                inset 0 2px 2px rgba(255,255,255,.14),
+                inset 0 -8px 14px rgba(0,0,0,.38);
+  --shadow-clay-active:0 6px 12px -8px rgba(0,0,0,.5),
+                inset 0 2px 4px rgba(0,0,0,.45);
+
+  --glass-bg:      rgba(16,22,26,.60);
+  --glass-border:  rgba(255,255,255,.14);
+  --glass-hi:      rgba(255,255,255,.12);
+  --glass-ambient: 0 24px 60px -28px rgba(0,0,0,.75);
+  --glass-blur:    blur(20px) saturate(160%);
+
+  --glow-cta: 0 0 22px -4px rgba(45,212,191,.45);
+
+  --mesh-base:  #0b0f14;
+  --mesh-teal:  rgba(13,110,100,.30);
+  --mesh-amber: rgba(180,105,25,.16);
+  --mesh-slate: rgba(0,0,0,.35);
+  --mesh-dot:   rgba(159,173,178,.10);
+
+  --overlay: rgba(3,6,8,.66);
+}

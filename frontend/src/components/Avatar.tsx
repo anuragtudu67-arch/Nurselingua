@@ -26,27 +26,27 @@ export interface AvatarPreset {
 
 export const AVATAR_PRESETS: AvatarPreset[] = [
   {
-    id: 'bridge', label: 'Bridge', bg: '#0f766e',
+    id: 'bridge', label: 'Bridge', bg: 'var(--av-bridge)',
     glyph: <><path d="M4 15c3-4 6-4 8 0s5 4 8 0" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" /><circle cx="8" cy="9" r="1.7" fill="currentColor" /><circle cx="16" cy="9" r="1.7" fill="currentColor" /></>,
   },
   {
-    id: 'wave', label: 'Wave', bg: '#2563eb',
+    id: 'wave', label: 'Wave', bg: 'var(--av-wave)',
     glyph: <path d="M4 10c2.5-2.6 5-2.6 7.5 0s5 2.6 7.5 0M4 15c2.5-2.6 5-2.6 7.5 0s5 2.6 7.5 0" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />,
   },
   {
-    id: 'arc', label: 'Arc', bg: '#3a4fd8',
+    id: 'arc', label: 'Arc', bg: 'var(--av-arc)',
     glyph: <><path d="M5 16a7 7 0 0 1 14 0" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" /><path d="M12 4v3M5.5 7l2 2M18.5 7l-2 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></>,
   },
   {
-    id: 'orbit', label: 'Orbit', bg: '#0d9488',
+    id: 'orbit', label: 'Orbit', bg: 'var(--av-orbit)',
     glyph: <><circle cx="12" cy="12" r="3.4" fill="currentColor" /><ellipse cx="12" cy="12" rx="8.5" ry="4" fill="none" stroke="currentColor" strokeWidth="1.8" transform="rotate(-24 12 12)" /></>,
   },
   {
-    id: 'dawn', label: 'Dawn', bg: '#a16207',
+    id: 'dawn', label: 'Dawn', bg: 'var(--av-dawn)',
     glyph: <><path d="M4 16h16" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" /><path d="M7 12a5 5 0 0 1 10 0" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" /><path d="M12 4v2.5M5.6 7.2l1.7 1.7M18.4 7.2l-1.7 1.7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></>,
   },
   {
-    id: 'ledger', label: 'Lines', bg: '#4b5563',
+    id: 'ledger', label: 'Lines', bg: 'var(--av-ledger)',
     glyph: <path d="M6 8h12M6 12h12M6 16h7" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />,
   },
 ];

@@ -6,7 +6,7 @@ import { createContext, useContext } from 'react';
 export type LocaleCode = 'en' | 'es';
 
 const en = {
-  'app.name': 'Ningua',
+  'app.name': 'NurseLinguo',
   'app.tagline': 'Communicate now, in the patient’s language.',
   'nav.home': 'Home',
   'nav.phrasebook': 'Learn',
@@ -38,7 +38,7 @@ const en = {
   'landing.body': 'Phrasebook first: tap a reviewed nursing question and it is spoken aloud in the patient’s language. When you speak or type freely, both languages stay on screen side by side.',
   'landing.cta': 'Create an account',
   'landing.signin': 'Sign in',
-  'disclaimer.body': 'Ningua is a routine communication aid, not a substitute for professional interpreters in critical decisions.',
+  'disclaimer.body': 'NurseLinguo is a routine communication aid, not a substitute for professional interpreters in critical decisions.',
   'disclaimer.interpreter': 'Request an interpreter',
   'onboarding.nurseLanguage': 'Your language',
   'onboarding.patientLanguages': 'Patient languages you commonly encounter',
@@ -93,7 +93,7 @@ const es: Partial<Record<keyof typeof en, string>> = {
   'common.patient': 'Paciente',
   'landing.title': 'Hable el idioma de su paciente en un solo toque.',
   'landing.cta': 'Crear una cuenta',
-  'disclaimer.body': 'Ningua es una ayuda de comunicación de rutina, no sustituye a un intérprete profesional en decisiones críticas.',
+  'disclaimer.body': 'NurseLinguo es una ayuda de comunicación de rutina, no sustituye a un intérprete profesional en decisiones críticas.',
   'disclaimer.interpreter': 'Solicitar intérprete',
   'home.start': 'Iniciar una conversación',
   'home.categories': 'Frases comunes por categoría',

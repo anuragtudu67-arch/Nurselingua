@@ -408,7 +408,7 @@ export default function Settings() {
         <h2>Safety notice</h2>
         <p className="small muted" style={{ margin: 0 }}>{t('disclaimer.body')}</p>
         <p className="tiny muted" style={{ marginTop: '.35rem', marginBottom: 0 }}>
-          Ningua is a communication aid for routine interactions, not a medical device,
+          NurseLinguo is a communication aid for routine interactions, not a medical device,
           not a diagnosis tool. For informed consent, serious news, or any critical
           conversation, use a professional interpreter.
         </p>
