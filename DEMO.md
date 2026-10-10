@@ -1,6 +1,6 @@
-# Ningua demo guide
+# NurseLinguo demo guide
 
-Ningua is a nurse-to-patient communication aid for routine care. You speak or tap a reviewed
+NurseLinguo is a nurse-to-patient communication aid for routine care. You speak or tap a reviewed
 nursing phrase and it appears in the patient's language on screen and read aloud in a native
 voice. You can also type or record the patient; the app shows both languages side by side.
 
@@ -15,8 +15,11 @@ The backend is frozen and verified; this guide is for a local supervisor demo on
 - Maven: the blessed path on this machine is the bundled copy at `.tools/apache-maven-3.9.9/bin/mvn.cmd`. It exists and runs from a cold start. The repo also has a Maven wrapper at `backend/mvnw`; either works, but the `.tools` copy is the one I tested from CMD and PowerShell and is the one in the run steps below.
 - No Python required for the demo.
 
-Naming note: the service, database, tables, and code still say `nurselingua`; the UI brand is
-Ningua. A rename is scheduled, so do not be surprised by the mixed names in configs and logs.
+Naming note: the product brand is **NurseLinguo**. The service, database, tables, containers
+(`ningua-mysql`), localStorage keys, npm package names, and folder names still say
+`nurselingua` / `ningua` because the backend and infrastructure are frozen for this demo. A
+full rename is scheduled for the backend phase, so do not be surprised by the mixed names in
+configs and logs. Only user-visible copy uses `NurseLinguo`.
 
 ## Run steps
 
@@ -98,10 +101,10 @@ Ningua. A rename is scheduled, so do not be surprised by the mixed names in conf
 Show each stop once; say one line per stop.
 
 1. **Landing** — http://localhost:5173  \
-   Header: Ningua mark, "How it works" / "Languages" / "Sign in". One primary CTA "Create an
+   Header: NurseLinguo mark, "How it works" / "Languages" / "Sign in". One primary CTA "Create an
    account", one quieter "See how it works". Show the four-stage support choice in the "How much
    support you want" card by clicking through Full Support → Guided Blend → Target Focus → Immersion;
-   the reviewed phrase refolds its familiar line at the later stages. Say: "Ningua is a routine
+   the reviewed phrase refolds its familiar line at the later stages. Say: "NurseLinguo is a routine
    communication aid; a professional interpreter stays one tap away."
 
 2. **Sign in** — http://localhost:5173/sign-in  \
@@ -158,8 +161,49 @@ Show each stop once; say one line per stop.
 - Backend verification: `npm run verify:api` at `API_URL=http://localhost:8080` passes **52/52,
   1 documented warning**.
 - Frontend verification: `npm run verify:ui` passes **16/16**.
-- Latest frontend commit: `4547861 feat(frontend): Ningua redesign - stages, system theme, Review,
-  prefs adapter, honest telemetry`.
+- Latest commits: `e149748 fix(frontend): retry STT result polling so slow transcription isn't
+  reported as inaudible` and `4fbff0b docs: supervisor demo run guide`. Patient-voice turns now
+  poll the STT job with a deadline (backing off from ~300ms to ~1s, capped at 20s) and show a
+  neutral "Listening" state while pending; a slow-but-successful transcription lands as a normal
+  patient turn instead of a false "couldn't hear that" error.
+
+## Demo dataset (optional, richer walkthrough)
+
+Create a demo account with real data using only endpoints that actually exist
+(`demo@hospital.example`, token `dev.demo%40hospital.example`):
+
+- `POST /api/v1/onboarding` (nurseLanguage `en`, patientLanguages `[es,hi,bn]`, speechRate `slow`, retention `7days`)
+- `POST /api/v1/conversations` three times (patientLanguage `es`, `hi`, `es`)
+- `POST /api/v1/conversations/{id}/turns` (a NURSE phrase turn and a PATIENT text turn per conversation)
+- `POST /api/v1/favorites` eight times (phrase ids from `GET /api/v1/phrases?lang=es`)
+
+Result on this machine: **3 conversations, 6 turns, 8 favorites, onboarding complete**. A nurse
+free-text turn outside the offline glossary returns 503 by design and is not stored (that is the
+"flagged" turn). Review answers are device-local; star the phrases and answer in the Review tab.
+
+## State matrix (expected behaviour)
+
+| # | State | Verdict |
+|---|-------|---------|
+| 1 | Fresh user, no data | empty states render on Home / Review / Progress |
+| 2 | Onboarded, no conversations | Home shows the start card, no invented numbers |
+| 3 | Full demo dataset | conversation, turn and favourite counts all render |
+| 4 | Free-text 503 turn | clean 503, no crash (not stored) |
+| 5 | Signed out | public routes render; private routes redirect to sign-in and recover |
+| 6 | Backend down | honest offline state, no white screens or infinite spinners |
+| 7 | localStorage cleared mid-session | sane defaults, re-runnable onboarding |
+| 8 | Second device/profile | per-device prefs diverge; app stays fully usable |
+
+## Optional: present live from your machine
+
+One Cloudflare quick tunnel covers the whole stack because Vite proxies `/api` host-side:
+
+    cloudflared tunnel --url http://localhost:5173
+
+Paste the printed `https://*.trycloudflare.com` URL. Tunnel ONLY :5173; never expose :8080,
+:3307 or :5678 directly. No router or port-forwarding. Keep the laptop awake and plugged in, and
+stop the tunnel with Ctrl+C. The URL dies the moment you stop, and the dev sign-in shim is
+acceptable only because the URL is ephemeral and owner-controlled.
 
 ## Troubleshooting
 
