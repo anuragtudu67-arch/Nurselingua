@@ -34,3 +34,10 @@ Thumbs.db
 
 # deploy tooling
 .vercel/
+
+.report-work/
+backend.pid
+~$*
+NurseLingua_Minor_Project_Report.docx
+
+scripts/.demo-pids.json

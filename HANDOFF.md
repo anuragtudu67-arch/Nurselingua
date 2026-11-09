@@ -175,8 +175,8 @@ Radix based, so pulling them in adds dependencies; confirm before those land.
 Buy the domain, add it in Vercel (`Project > Domains`) and point DNS. Then:
 
 * Frontend on Vercel: root directory `frontend/`, env `VITE_API_URL=https://<your-api>`
-* Backend on Render: root directory `backend/`. There is **no `mvnw`**, so `mvnw clean
-  package` will fail; add a Maven wrapper or use a Docker build. Set
+* Backend on Render: root directory `backend/`. Both `backend/mvnw` and `backend/mvnw.cmd`
+  exist, so `./mvnw clean package` works; a Docker build is optional. Set
   `NURSELINGUA_DEV_AUTH=false`, `CLERK_JWT_ISSUER`, the datasource variables,
   `NURSELINGUA_CORS_ORIGINS=https://<your-domain>` and the `N8N_*` values
 * The database must be **MySQL**, not Postgres: the migrations and `flyway-mysql` are

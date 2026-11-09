@@ -18,7 +18,7 @@ services:
     ports:
       # Host port is overridable (MYSQL_PORT=3307 docker compose up -d mysql) for
       # machines where a native MySQL already owns 3306.
-      - "${MYSQL_PORT:-3306}:3306"
+      - "${MYSQL_PORT:-3307}:3306"
     volumes:
       - ningua-mysql:/var/lib/mysql
     healthcheck:

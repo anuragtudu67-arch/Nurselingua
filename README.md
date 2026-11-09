@@ -14,10 +14,14 @@ conversations. The app says so on the landing page, in Settings, and before firs
 |---|---|
 | Frontend | React 18 + TypeScript + Vite, hand-written CSS on design tokens, Tailwind available |
 | API | Spring Boot 3.5 (Java 21), Spring Security, JPA, Flyway, MySQL |
-| Auth | Clerk session JWTs (RS256, verified with Nimbus). A dev shim accepts `Bearer dev.<email>` locally |
-| Async speech | Submit and poll in the backend, with results delivered by an n8n callback webhook |
-| Media | Cloudflare R2 presigned uploads, with an inline demo fallback when R2 is off |
-| Automation | n8n workflows under `n8n/workflows/` |
+| Auth | A dev shim accepts `Bearer dev.<email>` locally. Clerk RS256 verification exists in code but is **not yet tested** with a real token |
+| Async speech | **Simulated.** Submit and poll in the backend; the STT/TTS pipeline completes on a timer, and no real audio is uploaded or transcribed |
+| Media | Cloudflare R2 presign is implemented but **not yet tested**; with R2 off, uploads fall back to `inline/` references |
+| Automation | n8n is wired but **not used**: `n8n/workflows/evaluation.json` is a legacy stub that does not match the callback contract, and no workflow is imported |
+
+Data retention is **soft-delete only**. An hourly scheduled job sets `deleted = true` on
+conversations past `expires_at`, and `DELETE /conversations/{id}` does the same; nothing ever
+purges the rows, so soft-deleted conversations and their turns remain in the database.
 
 ## Layout
 
@@ -59,11 +63,47 @@ VITE_API_URL=http://localhost:8081 npm run dev:frontend
 ```
 
 With MySQL instead, copy `.env.example` to `.env`, run `npm run infra:up` for MySQL and n8n,
-then `npm run backend`. Note that compose creates the database and user `ningua`, while the
-backend defaults to `nurselingua`; align those or set `SPRING_DATASOURCE_*`.
+then `npm run backend`. Compose creates the database and user `nurselingua` to match the
+backend defaults; only `MYSQL_PORT` / `SPRING_DATASOURCE_*` need changing for a remote database.
 
 Any email signs you in locally (the dev shim issues the token). `NURSELINGUA_DEV_AUTH=false`
 disables that shim and must be set on any deployed environment.
+
+## Windows: native MySQL already on 3306
+
+Many Windows machines already run a native `mysqld.exe` on 3306. Compose therefore publishes
+MySQL on host port **3307** (`${MYSQL_PORT:-3307}`), and `application.yml` reads the same
+`MYSQL_PORT` variable with the same 3307 default, so the two always agree and the native
+server is never touched. No `SPRING_DATASOURCE_URL` override is needed.
+
+```powershell
+# 1. MySQL container on host port 3307 (change with $env:MYSQL_PORT before this line)
+docker compose up -d mysql
+
+# 2. backend on http://localhost:8080; Flyway applies V1..V7 on first run
+cd backend
+.\mvnw.cmd spring-boot:run
+
+# 3. frontend in a second window. PowerShell needs $env:, not VAR=value
+cd ..
+$env:VITE_API_URL = "http://localhost:8080"
+npm run dev:frontend
+```
+
+Confirm the container and the tables it holds:
+
+```powershell
+docker ps --filter name=ningua-mysql
+docker exec -it ningua-mysql mysql -unurselingua -pchangeme --default-character-set=utf8mb4 `
+  nurselingua -e "SHOW TABLES;"
+```
+
+Pass `--default-character-set=utf8mb4` on Windows: `mysql.exe` otherwise connects as latin1
+and prints `aquí` as `aquÃ­`, even though the stored bytes are correct UTF-8. Start PowerShell
+sessions for this project with `chcp 65001` if accented output still looks wrong.
+
+If you move the container to another port, set `$env:MYSQL_PORT` before both `docker compose`
+and the backend, or pass `SPRING_DATASOURCE_URL` explicitly to the backend.
 
 ## Demo walkthrough
 

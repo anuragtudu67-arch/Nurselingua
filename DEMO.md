@@ -21,40 +21,87 @@ Naming note: the product brand is **NurseLinguo**. The service, database, tables
 full rename is scheduled for the backend phase, so do not be surprised by the mixed names in
 configs and logs. Only user-visible copy uses `NurseLinguo`.
 
-## Run steps
+## Quick start (owner path)
+
+Double-click **`start-demo.cmd`** in the repo root, or run:
+
+```
+scripts\start-demo.cmd
+```
+
+That is the owner path. It brings up Docker, MySQL, the Java backend and Vite on :5173 in order,
+prints one status line per layer, and is safe to run twice: anything already up and answering
+correctly is reused instead of restarted. Stop it with `scripts\stop-demo.ps1`, which kills only
+the `java`/`node` processes it started and never touches Docker.
+
+The manual steps below are the fallback for when the launcher itself is the thing being
+debugged. Every command is given in both CMD and PowerShell flavours, because the two shells
+handle quoting differently and that difference caused every failure so far.
+
+## Run steps (manual fallback)
 
 1. **Start Docker Desktop** from the Start menu. Wait until the whale icon in the system tray
-   shows "Running".
+   shows "Running". Check first, and only start it if this fails:
+   ```
+   docker version
+   ```
+   **PowerShell:** `docker version`  and, if it failed, `Start-Process "C:\Program Files\Docker\Docker\Docker Desktop.exe"`
+   **CMD:** `docker version`  and, if it failed, `start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe"`
 
 2. **Start the containers** from the repo root. Port 3306 is already used by the machine's own
-   MySQL80 service, so use host port 3307 for the demo database. Run these as two separate lines,
-   not one chained command:
+   MySQL80 service, so use host port 3307 for the demo database.
+
+   **`MYSQL_PORT` is optional and already defaults to 3307.** Compose publishes the host port
+   from `${MYSQL_PORT:-3307}`, and the backend reads the same `${MYSQL_PORT:3307}` default, so
+   `npm run infra:up` on its own is enough and no `SPRING_DATASOURCE_URL` override is needed.
+   Set `MYSQL_PORT` in that shell, before the command, only if you move the container to a
+   different port:
+
    ```
-   set MYSQL_PORT=3307
    npm run infra:up
    ```
    This starts `ningua-mysql` (MySQL 8.4 on host port 3307) and the local n8n container on :5678.
-   After it starts, confirm the database is ready with:
+
+   **Check before you start / after it starts** (a container that exists is not a container that
+   is reachable):
    ```
+   docker ps --format "table {{.Names}}\t{{.Ports}}\t{{.Status}}"
    docker inspect -f "{{.State.Health.Status}}" ningua-mysql
    ```
-   Expect `healthy`.
+   The `ningua-mysql` row must show `0.0.0.0:3307->3306/tcp` and `(healthy)`. If it shows a
+   different host port, that is the port the backend must be told about via `MYSQL_PORT`.
 
 3. **Start the backend** on port :8080. The repo's IntelliJ config named **"1 - Demo API (:8080)"**
    is an npm config that launches `api-mock/package.json` → `npm run start` → `node server.js` on
    port 8080. That is the Node.js mock, not the real Java backend. For the frozen, verified backend
    use Maven.
 
-   The backend's built-in datasource default points at port **3306**, but this machine's native
-   MySQL80 owns 3306, so the demo MySQL container is on **3307**. Point the backend at 3307 with
-   `SPRING_DATASOURCE_URL`, then start it. These are the exact lines to paste in CMD (run each on
-   its own line, no backslash continuations):
+   The backend's datasource default follows the same `${MYSQL_PORT:3307}` variable as compose,
+   so it connects to the demo container with no override: this machine's native MySQL80 keeps
+   port 3306, and the demo container is published on 3307. Username and password already match
+   the container defaults (`nurselingua` / `changeme`). Override `SPRING_DATASOURCE_URL` only
+   for a different host or database.
+
+   **Check before you start** (never launch a second API on top of a live one):
    ```
-   set "SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3307/nurselingua?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
-   .tools\apache-maven-3.9.9\bin\mvn.cmd -f backend/pom.xml spring-boot:run -Dspring-boot.run.arguments=--server.port=8080
+   curl http://localhost:8080/api/health
    ```
-   In PowerShell the first line is instead: `$env:SPRING_DATASOURCE_URL="jdbc:mysql://localhost:3307/nurselingua?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"`.
-   Username and password already match the container defaults (`nurselingua` / `changeme`).
+   - `{"ok":true,"service":"nurselingua-api"}`: the real backend is already up. Reuse it and skip to step 4.
+   - `{"ok":true,"service":"ningua-api-mock"}`: that is the Node mock, not the frozen Java backend. Stop it first (see Troubleshooting) and start the backend below.
+   - connection refused: nothing holds 8080, continue.
+
+   **CMD:**
+   ```
+   .tools\apache-maven-3.9.9\bin\mvn.cmd -f backend/pom.xml spring-boot:run "-Dspring-boot.run.arguments=--server.port=8080"
+   ```
+
+   **PowerShell:**
+   ```
+   .\.tools\apache-maven-3.9.9\bin\mvn.cmd -f backend/pom.xml spring-boot:run "-Dspring-boot.run.arguments=--server.port=8080"
+   ```
+   PowerShell must see the whole `-Dspring-boot.run.arguments=--server.port=8080` as one quoted
+   argument. Unquoted, PowerShell splits it at the dots and Maven answers
+   `Unknown lifecycle phase ".run.arguments"`.
    Or with the repo's Maven wrapper (same env var applies):
    ```
    backend\mvnw.cmd -f backend/pom.xml spring-boot:run -Dspring-boot.run.arguments=--server.port=8080
@@ -75,7 +122,16 @@ configs and logs. Only user-visible copy uses `NurseLinguo`.
    - Real backend `/api/v1/languages` rows look like
      `{"code":"en","name":"English","nativeName":"English","ttsLocale":"en-US","sttSupported":true,"script":"Latin","hasRomanization":false,"uiLocaleSupport":true,"rtl":false}`.
 
-4. **Install and run the frontend**. Run these as separate lines:
+4. **Install and run the frontend**. Run these as separate lines.
+
+   **CMD:**
+   ```
+   cd frontend
+   npm install
+   npm run dev
+   ```
+
+   **PowerShell:**
    ```
    cd frontend
    npm install
@@ -84,14 +140,16 @@ configs and logs. Only user-visible copy uses `NurseLinguo`.
    The Vite dev server opens on **http://localhost:5173** and proxies `/api` straight to the
    backend on :8080, so the browser only ever uses relative URLs.
 
-   If port 5173 is busy, Vite prints the port it fell back to — use that URL instead. If an old
-   stale Vite server is sitting on 5173 with the wrong proxy, kill it first. On Windows, find the
-   process with:
+   **:5173 only. Never accept 5174 or higher.** The frontend keeps the signed-in token, onboarding
+   progress, theme, stage and goal in `localStorage`, and `localStorage` is scoped per origin
+   including the port. A second instance on :5174 is therefore a different, empty browser profile:
+   you look signed out, onboarding restarts, and settings you set on 5173 disappear. That is the
+   ghost-state bug. If Vite prints any other port, do not use it:
    ```
    netstat -ano | findstr ":5173"
    ```
-   Then stop it with `taskkill //F //PID <pid>` (use the PID from the netstat output), then restart
-   with `cd frontend && npm run dev`.
+   Stop whatever owns :5173 (see Troubleshooting), then run `npm run dev` again and confirm the printed
+   URL is `http://localhost:5173`.
 
    If port 8080 is busy, the real backend only listens on :8080 in this demo. Stop whatever holds
    it, or pick a free port and set `--server.port=<free>` in the Maven command above.
